@@ -4,12 +4,9 @@ services:
   - type: web
     name: prognosops
     runtime: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: 3.12.0   # 写完整的三段版本号
       # 以下为敏感/可选变量,需在 Render 控制台手动填写(sync: false 不入库)
       - key: MODEL_BASE_URL
         sync: false
