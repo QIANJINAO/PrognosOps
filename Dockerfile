@@ -1,6 +1,6 @@
 # PrognosOps - FastAPI 应用
-# 基础镜像:python:3.11-slim(平台预处理器保留 3.11/3.12/3.13/3.14)
-FROM python:3.11-slim
+# 与本地已通过测试的版本一致，满足 NumPy 2.5 的 Python >=3.12 要求
+FROM python:3.14.4-slim
 
 # 设置工作目录
 WORKDIR /app

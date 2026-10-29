@@ -3,6 +3,7 @@ fastapi==0.136.0
 uvicorn[standard]==0.44.0
 python-multipart==0.0.26
 numpy==2.5.3
+pandas==3.0.2
 scipy==1.17.1
 httpx==0.28.1
 python-dotenv==1.2.2
