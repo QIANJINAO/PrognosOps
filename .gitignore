@@ -1,0 +1,34 @@
+# 环境变量与密钥(严禁提交)
+.env
+.env.local
+.env.*.local
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# 测试缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# AI 助手内部文件
+.joycode/
+*.swp
+*.swo
+
+# 数据文件(上传的 CSV 不入库)
+data/*.csv
+data/*.txt
+!data/.gitkeep
+
+# 临时文件
+*.tmp
+*.log

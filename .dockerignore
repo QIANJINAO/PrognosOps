@@ -1,0 +1,22 @@
+# 版本控制与 IDE
+.git/
+.gitignore
+.joycode/
+
+# 环境变量(密钥由平台注入,绝不打入镜像)
+.env
+
+# 测试与文档(生产镜像不需要)
+tests/
+docs/
+.pytest_cache/
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 本地运行时数据
+data/
+
+# 平台/部署配置本身无需排除(Dockerfile 必须保留)

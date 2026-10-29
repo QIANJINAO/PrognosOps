@@ -1,0 +1,26 @@
+{
+  "fd001": {
+    "dataset_name": "NASA C-MAPSS FD001",
+    "description": "单故障模式(HPC 退化)、单操作条件下的涡扇发动机数据集",
+    "total_columns": 26,
+    "unit_column": "unit",
+    "cycle_column": "cycle",
+    "setting_columns": ["op_setting1", "op_setting2", "op_setting3"],
+    "all_column_names": [
+      "unit", "cycle",
+      "op_setting1", "op_setting2", "op_setting3",
+      "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+      "s12", "s13", "s14", "s15", "s16", "s17", "s18", "s19", "s20", "s21"
+    ],
+    "selected_sensors": [
+      "s2", "s3", "s4", "s7", "s8", "s9",
+      "s11", "s12", "s13", "s14", "s15", "s17", "s20", "s21"
+    ],
+    "constant_sensors": [
+      "s1", "s5", "s6", "s10", "s16", "s18", "s19"
+    ],
+    "min_cycles": 30,
+    "feature_window": 30,
+    "max_file_size_mb": 50
+  }
+}

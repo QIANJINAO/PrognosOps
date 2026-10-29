@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrognosOps 维策 · 设备运维工作台</title>
+  <script src="https://storage.360buyimg.com/dist-dev/joycoder/fe-page-cdn/tailwindcss.js"></script>
+  <script src="https://storage.360buyimg.com/dist-dev/joycoder/fe-page-cdn/lucide.js"></script>
+  <script src="https://storage.360buyimg.com/dist-dev/joycoder/fe-page-cdn/chart.umd.min.js" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(214.3 31.8% 91.4%)",
+            input: "hsl(214.3 31.8% 91.4%)",
+            ring: "hsl(222.2 84% 4.9%)",
+            background: "hsl(0 0% 100%)",
+            foreground: "hsl(222.2 84% 4.9%)",
+            primary: { DEFAULT: "hsl(222.2 47.4% 11.2%)", foreground: "hsl(210 40% 98%)" },
+            secondary: { DEFAULT: "hsl(210 40% 96%)", foreground: "hsl(222.2 84% 4.9%)" },
+            destructive: { DEFAULT: "hsl(0 84.2% 60.2%)", foreground: "hsl(210 40% 98%)" },
+            muted: { DEFAULT: "hsl(210 40% 96%)", foreground: "hsl(215.4 16.3% 46.9%)" },
+            accent: { DEFAULT: "hsl(210 40% 96%)", foreground: "hsl(222.2 84% 4.9%)" },
+            card: { DEFAULT: "hsl(0 0% 100%)", foreground: "hsl(222.2 84% 4.9%)" },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- ═══════════════ 顶部导航栏 ═══════════════ -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-14">
+        <div class="flex items-center gap-3">
+          <i data-lucide="activity" class="h-6 w-6 text-emerald-400"></i>
+          <span class="text-lg font-bold tracking-tight">PrognosOps</span>
+          <span class="text-xs text-slate-400 hidden sm:inline">维策 · 决策导向的预测性维护</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="health-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">
+            <span id="health-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="health-text">检测中</span>
+          </div>
+          <div id="session-badge" class="hidden text-xs px-2.5 py-1 rounded-full bg-emerald-900/50 text-emerald-300 font-mono">
+          </div>
+        </div>
+      </div>
+      <!-- 标签导航 -->
+      <nav class="flex gap-1 overflow-x-auto -mb-px" id="nav-tabs">
+        <button data-tab="upload" class="nav-tab active whitespace-nowrap"><i data-lucide="upload" class="h-4 w-4"></i>数据上传</button>
+        <button data-tab="quality" class="nav-tab whitespace-nowrap"><i data-lucide="shield-check" class="h-4 w-4"></i>数据体检</button>
+        <button data-tab="trend" class="nav-tab whitespace-nowrap"><i data-lucide="trending-up" class="h-4 w-4"></i>趋势分析</button>
+        <button data-tab="decision" class="nav-tab whitespace-nowrap"><i data-lucide="wrench" class="h-4 w-4"></i>维修决策</button>
+        <button data-tab="backtest" class="nav-tab whitespace-nowrap"><i data-lucide="history" class="h-4 w-4"></i>离线回测</button>
+        <button data-tab="query" class="nav-tab whitespace-nowrap"><i data-lucide="message-square" class="h-4 w-4"></i>智能询问</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════════════ 主内容区 ═══════════════ -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+
+    <!-- ───── 视图:数据上传 ───── -->
+    <section id="view-upload" class="view-section">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="file-up" class="h-5 w-5 text-slate-500"></i>上传 CSV 数据</h2>
+          <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/30 transition-colors">
+            <i data-lucide="cloud-upload" class="h-10 w-10 text-slate-400 mx-auto mb-3"></i>
+            <p class="text-sm text-slate-600">点击选择或拖拽 CSV 文件到此处</p>
+            <p class="text-xs text-slate-400 mt-1">NASA C-MAPSS FD001 格式(空格/逗号分隔,26 列,≤50MB)</p>
+            <input type="file" id="file-input" accept=".csv,.txt" class="hidden">
+          </div>
+          <div id="upload-loading" class="hidden mt-4 flex items-center gap-2 text-sm text-slate-500">
+            <i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>正在上传并解析数据...
+          </div>
+          <div id="upload-error" class="hidden mt-4 p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-700"></div>
+        </div>
+        <div class="card p-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="flask-conical" class="h-5 w-5 text-slate-500"></i>演示数据</h2>
+          <p class="text-sm text-slate-600 mb-4">生成合成 FD001 格式数据(5 个设备单元,传感器含退化趋势),通过后端真实管线处理。</p>
+          <button id="btn-demo" class="btn-primary w-full">
+            <i data-lucide="play" class="h-4 w-4"></i>生成并上传演示数据
+          </button>
+          <div id="demo-loading" class="hidden mt-4 flex items-center gap-2 text-sm text-slate-500">
+            <i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>正在生成演示数据并上传...
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-200">
+            <h3 class="text-sm font-medium text-slate-700 mb-2">数据格式要求</h3>
+            <ul class="text-xs text-slate-500 space-y-1">
+              <li>· 列:unit, cycle, 3 个设定列, 21 个传感器列(共 26 列)</li>
+              <li>· 分隔符:空格 / 逗号 / 制表符(自动检测)</li>
+              <li>· 表头:有或无均可(自动检测)</li>
+              <li>· 每个单元至少 30 个周期方可提取特征</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div id="upload-result" class="hidden mt-6 card p-6">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="check-circle-2" class="h-5 w-5 text-emerald-500"></i>上传成功</h2>
+        <div id="upload-result-content"></div>
+      </div>
+    </section>
+
+    <!-- ───── 视图:数据体检 ───── -->
+    <section id="view-quality" class="view-section hidden">
+      <div id="quality-empty" class="card p-12 text-center text-slate-400">
+        <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-3"></i>
+        <p>请先上传数据</p>
+      </div>
+      <div id="quality-content" class="hidden space-y-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="quality-summary-cards"></div>
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4">检查项明细</h3>
+          <div id="quality-checks" class="space-y-2"></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">设备单元摘要</h3>
+            <div class="overflow-x-auto"><table class="w-full text-sm" id="quality-units-table"></table></div>
+          </div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">列识别结果</h3>
+            <div id="quality-columns" class="text-sm space-y-2"></div>
+          </div>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4">假设说明</h3>
+          <div id="quality-assumptions" class="space-y-1.5"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 视图:趋势分析 ───── -->
+    <section id="view-trend" class="view-section hidden">
+      <div id="trend-empty" class="card p-12 text-center text-slate-400">
+        <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-3"></i>
+        <p>请先上传数据</p>
+      </div>
+      <div id="trend-content" class="hidden space-y-6">
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4 flex items-center gap-2"><i data-lucide="line-chart" class="h-5 w-5 text-slate-500"></i>传感器趋势图</h3>
+          <div class="flex flex-wrap gap-3 items-end mb-4">
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">设备单元</label>
+              <select id="trend-unit-select" class="input-field w-40"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">传感器(可多选)</label>
+              <select id="trend-sensor-select" multiple class="input-field w-64 h-28 text-xs"></select>
+            </div>
+            <button id="btn-trend-load" class="btn-primary"><i data-lucide="refresh-cw" class="h-4 w-4"></i>加载趋势</button>
+          </div>
+          <div class="chart-container"><canvas id="chart-sensor-trend"></canvas></div>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="h-5 w-5 text-slate-500"></i>RUL 概率分布</h3>
+          <div class="flex flex-wrap gap-3 items-end mb-4">
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">设备单元</label>
+              <select id="rul-unit-select" class="input-field w-40"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">预测时点周期(留空=最后周期)</label>
+              <input id="rul-cycle-input" type="number" class="input-field w-40" placeholder="自动">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">kNN 近邻数</label>
+              <input id="rul-knn-input" type="number" value="50" min="1" class="input-field w-28">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">随机种子(可选)</label>
+              <input id="rul-seed-input" type="number" class="input-field w-28" placeholder="不固定">
+            </div>
+            <button id="btn-rul-predict" class="btn-primary"><i data-lucide="brain" class="h-4 w-4"></i>预测 RUL</button>
+          </div>
+          <div id="rul-loading" class="hidden flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>正在执行特征提取 → kNN 检索 → Weibull 拟合...
+          </div>
+          <div id="rul-result" class="hidden space-y-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="rul-weibull-cards"></div>
+            <div class="chart-container"><canvas id="chart-rul-prob"></canvas></div>
+            <div id="rul-assumptions" class="text-xs text-slate-500 space-y-1"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 视图:维修决策 ───── -->
+    <section id="view-decision" class="view-section hidden">
+      <div id="decision-empty" class="card p-12 text-center text-slate-400">
+        <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-3"></i>
+        <p>请先在"趋势分析"中预测 RUL 概率分布</p>
+      </div>
+      <div id="decision-content" class="hidden space-y-6">
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4 flex items-center gap-2"><i data-lucide="settings" class="h-5 w-5 text-slate-500"></i>成本参数与风险容忍度</h3>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div><label class="block text-xs text-slate-500 mb-1">cm 最小维护成本</label><input id="param-cm" type="number" step="0.1" value="1" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">cd 停机成本</label><input id="param-cd" type="number" step="0.1" value="5" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">cp 预防性更换</label><input id="param-cp" type="number" step="1" value="50" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">cc 纠正性更换</label><input id="param-cc" type="number" step="1" value="200" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">alpha 折现因子</label><input id="param-alpha" type="number" step="0.001" min="0.001" max="1" value="0.01" class="input-field"></div>
+          </div>
+          <div class="mt-4 flex items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-slate-600"><input id="param-use-cache" type="checkbox" checked class="rounded">使用缓存</label>
+            <button id="btn-decision-run" class="btn-primary"><i data-lucide="calculator" class="h-4 w-4"></i>运行决策分析</button>
+          </div>
+          <div id="decision-loading" class="hidden mt-3 flex items-center gap-2 text-sm text-slate-500">
+            <i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>正在计算 ETO-C / IEO-C / ETO-Q / IEO-Q 四策略...
+          </div>
+          <div id="decision-param-error" class="hidden mt-3 p-2 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-700"></div>
+        </div>
+        <div id="decision-result" class="hidden space-y-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="decision-strategy-cards"></div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">维修窗口成本曲线</h3>
+            <div class="chart-container"><canvas id="chart-cost-curve"></canvas></div>
+          </div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">失效概率与期望寿命曲线</h3>
+            <div class="chart-container"><canvas id="chart-fail-life"></canvas></div>
+          </div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">ETO 与 IEO 并排对比</h3>
+            <div class="overflow-x-auto"><table class="w-full text-sm" id="decision-compare-table"></table></div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="card p-6">
+              <h3 class="text-base font-semibold mb-4">模型可信度(IEO 优化过程)</h3>
+              <div id="decision-ieo-traces" class="space-y-4"></div>
+            </div>
+            <div class="card p-6">
+              <h3 class="text-base font-semibold mb-4">假设说明</h3>
+              <div id="decision-assumptions" class="space-y-1.5"></div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button id="btn-export-decision-json" class="btn-secondary"><i data-lucide="download" class="h-4 w-4"></i>导出 JSON</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 视图:离线回测 ───── -->
+    <section id="view-backtest" class="view-section hidden">
+      <div id="backtest-empty" class="card p-12 text-center text-slate-400">
+        <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-3"></i>
+        <p>请先上传数据</p>
+      </div>
+      <div id="backtest-content" class="hidden space-y-6">
+        <div class="card p-6">
+          <h3 class="text-base font-semibold mb-4 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="h-5 w-5 text-slate-500"></i>回测配置</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><label class="block text-xs text-slate-500 mb-1">数据模式</label>
+              <select id="bt-mode" class="input-field"><option value="offline">offline(有真实RUL)</option><option value="online">online(无真实RUL)</option></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">决策时点间隔</label><input id="bt-step" type="number" value="10" min="1" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">最早决策时点</label><input id="bt-min-cycle" type="number" value="30" min="1" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">kNN 近邻数</label><input id="bt-knn" type="number" value="50" min="1" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">重复实验次数</label><input id="bt-repeats" type="number" value="1" min="1" class="input-field"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">随机种子(可选)</label><input id="bt-seed" type="number" class="input-field" placeholder="不固定"></div>
+            <div><label class="block text-xs text-slate-500 mb-1">敏感性参数</label>
+              <select id="bt-sens-param" class="input-field"><option value="">不做敏感性分析</option><option value="cp">cp</option><option value="cc">cc</option><option value="cd">cd</option><option value="cm">cm</option><option value="alpha">alpha</option></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">校准分箱数</label><input id="bt-bins" type="number" value="10" min="2" class="input-field"></div>
+          </div>
+          <div class="mt-4 flex gap-3">
+            <button id="btn-backtest-run" class="btn-primary"><i data-lucide="play-circle" class="h-4 w-4"></i>运行回测</button>
+            <button id="btn-backtest-csv" class="btn-secondary"><i data-lucide="file-spreadsheet" class="h-4 w-4"></i>导出 CSV</button>
+          </div>
+          <div id="backtest-loading" class="hidden mt-3 flex items-center gap-2 text-sm text-slate-500">
+            <i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>正在执行多时点决策模拟(可能需要数十秒)...
+          </div>
+        </div>
+        <div id="backtest-result" class="hidden space-y-6">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="bt-summary-cards"></div>
+          <div id="bt-sufficiency-note" class="hidden p-3 rounded-md bg-amber-50 border border-amber-200 text-sm text-amber-800"></div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">各策略回测汇总</h3>
+            <div class="overflow-x-auto"><table class="w-full text-sm" id="bt-strategy-table"></table></div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="card p-6">
+              <h3 class="text-base font-semibold mb-4">ETO 与 IEO 差异</h3>
+              <div class="overflow-x-auto"><table class="w-full text-sm" id="bt-diff-table"></table></div>
+            </div>
+            <div class="card p-6">
+              <h3 class="text-base font-semibold mb-4">失效概率校准</h3>
+              <div class="chart-container"><canvas id="chart-calibration"></canvas></div>
+            </div>
+          </div>
+          <div id="bt-sensitivity-section" class="card p-6 hidden">
+            <h3 class="text-base font-semibold mb-4">成本敏感性分析</h3>
+            <div class="chart-container"><canvas id="chart-sensitivity"></canvas></div>
+          </div>
+          <div class="card p-6">
+            <h3 class="text-base font-semibold mb-4">假设说明</h3>
+            <div id="bt-assumptions" class="space-y-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 视图:智能询问 ───── -->
+    <section id="view-query" class="view-section hidden">
+      <div class="card p-6 max-w-3xl mx-auto">
+        <h3 class="text-base font-semibold mb-2 flex items-center gap-2"><i data-lucide="message-circle" class="h-5 w-5 text-slate-500"></i>智能询问</h3>
+        <p class="text-xs text-slate-500 mb-4">通过后端 AI Agent 回答问题:大模型识别意图,后端工具执行真实计算,页面只显示工具返回的真实结果。未配置模型 API 时将提示配置方法。</p>
+        <div class="flex gap-3">
+          <input id="query-input" type="text" class="input-field flex-1" placeholder="例如:如果停机损失翻倍会怎样?再等一个窗口会多花多少钱?">
+          <button id="btn-query-submit" class="btn-primary shrink-0"><i data-lucide="send" class="h-4 w-4"></i>提问</button>
+        </div>
+        <div id="query-response" class="hidden mt-4 p-4 rounded-md bg-slate-50 border border-slate-200 text-sm leading-relaxed"></div>
+        <div id="query-tools" class="hidden mt-3"></div>
+        <div class="mt-4 pt-3 border-t border-slate-200">
+          <p class="text-xs text-slate-400 mb-2">快捷问题:</p>
+          <div class="flex flex-wrap gap-2" id="query-suggestions"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════ Toast 通知 ═══════════════ -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 space-y-2 w-80 max-w-[calc(100vw-2rem)]"></div>
+
+  <!-- ═══════════════ 脚本 ═══════════════ -->
+  <script src="js/api.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
