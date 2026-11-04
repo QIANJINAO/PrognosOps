@@ -1,0 +1,479 @@
+/* ═══════════════════════════════════════════════
+   PrognosOps 布局样式(layout.css)
+   作用域:.po-app,依赖 tokens.css / components.css
+   覆盖:顶栏/侧栏/应用壳/会话主体/页面切换/演示模式/移动端
+   信息架构:AI 对话为主体,侧栏轻量导航,详情按需抽屉
+   ═══════════════════════════════════════════════ */
+
+/* ───────── 顶栏(指挥舱质感,精简为品牌+状态+演示) ───────── */
+.po-topbar {
+  background: var(--po-surface);
+  border-bottom: 1px solid var(--po-border);
+  box-shadow: 0 1px 0 rgba(89, 199, 255, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.po-topbar-inner {
+  margin: 0 auto;
+  padding: 0 var(--po-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--po-space-3);
+  min-height: 56px;
+}
+.po-brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--po-space-2);
+  white-space: nowrap;
+}
+.po-brand-mark {
+  display: inline-block;
+  width: 3px;
+  height: 18px;
+  background: var(--po-accent);
+  border-radius: 2px;
+  margin-right: var(--po-space-2);
+  vertical-align: baseline;
+  box-shadow: 0 0 8px rgba(89, 199, 255, 0.5);
+}
+.po-brand {
+  font-size: var(--po-text-section-title-size);
+  font-weight: var(--po-weight-semibold);
+  line-height: var(--po-text-section-title-line);
+  color: var(--po-text);
+  letter-spacing: 0.02em;
+}
+.po-brand-sub {
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  color: var(--po-accent);
+  opacity: 0.85;
+}
+
+/* 侧栏折叠开关(汉堡按钮) */
+.po-sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.po-sidebar-toggle:hover {
+  background: var(--po-subtle);
+  border-color: var(--po-border);
+}
+.po-sidebar-toggle:focus-visible {
+  outline: var(--po-focus-outline-width) solid var(--po-focus);
+  outline-offset: var(--po-focus-outline-offset);
+}
+.po-sidebar-toggle-icon,
+.po-sidebar-toggle-icon::before,
+.po-sidebar-toggle-icon::after {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--po-secondary);
+  border-radius: 1px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.po-sidebar-toggle-icon { position: relative; }
+.po-sidebar-toggle-icon::before,
+.po-sidebar-toggle-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.po-sidebar-toggle-icon::before { top: -5px; }
+.po-sidebar-toggle-icon::after  { top: 5px; }
+
+/* ───────── 服务状态 ───────── */
+.po-health {
+  display: flex;
+  align-items: center;
+  gap: var(--po-space-2);
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  color: var(--po-muted);
+  white-space: nowrap;
+  margin-left: auto;
+}
+.po-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--po-muted);
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.po-health-dot.ok {
+  background: var(--po-success-fg);
+  box-shadow: 0 0 6px rgba(82, 199, 165, 0.6);
+}
+.po-health-dot.err {
+  background: var(--po-error-fg);
+  box-shadow: 0 0 6px rgba(240, 120, 120, 0.6);
+}
+
+/* ───────── 应用壳:侧栏 + 主体(全宽 flex) ───────── */
+.po-app-shell {
+  display: flex;
+  min-height: calc(100vh - 56px);
+  align-items: stretch;
+}
+
+/* ───────── 左侧轻量侧栏(232px,可折叠) ───────── */
+.po-sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--po-surface);
+  border-right: 1px solid var(--po-border);
+  display: flex;
+  flex-direction: column;
+  padding: var(--po-space-4) 0;
+  overflow-y: auto;
+  transition: width 0.2s ease, padding 0.2s ease;
+}
+/* 折叠态:宽度归零,内容隐藏 */
+.po-app-shell.po-sidebar-collapsed .po-sidebar {
+  width: 0;
+  padding: 0;
+  border-right: none;
+  overflow: hidden;
+}
+.po-sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: var(--po-space-2);
+  padding: 0 var(--po-space-4) var(--po-space-4);
+  border-bottom: 1px solid var(--po-border);
+  margin-bottom: var(--po-space-3);
+}
+.po-sidebar-brand-text {
+  font-size: var(--po-text-control-size);
+  font-weight: var(--po-weight-semibold);
+  color: var(--po-text);
+  letter-spacing: 0.02em;
+}
+
+/* 侧栏导航 */
+.po-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--po-space-3);
+  margin-bottom: var(--po-space-4);
+}
+.po-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--po-space-2);
+  min-height: var(--po-hit-area-min);
+  padding: var(--po-space-2) var(--po-space-3);
+  font-family: var(--po-font-sans);
+  font-size: var(--po-text-control-size);
+  font-weight: var(--po-weight-medium);
+  line-height: var(--po-text-control-line);
+  color: var(--po-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.po-sidebar-link:hover { background: var(--po-subtle); }
+.po-sidebar-link.is-active {
+  color: var(--po-text);
+  background: var(--po-accent-soft);
+  border-color: var(--po-accent);
+}
+.po-sidebar-link:focus-visible {
+  outline: var(--po-focus-outline-width) solid var(--po-focus);
+  outline-offset: var(--po-focus-outline-offset);
+}
+.po-sidebar-link-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* 侧栏分区(数据入口等) */
+.po-sidebar-section {
+  padding: 0 var(--po-space-3);
+  margin-bottom: var(--po-space-4);
+}
+.po-sidebar-section-title {
+  font-size: var(--po-text-aux-size);
+  font-weight: var(--po-weight-semibold);
+  color: var(--po-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 var(--po-space-2) var(--po-space-3);
+}
+.po-sidebar-action {
+  display: block;
+  width: 100%;
+  min-height: var(--po-hit-area-min);
+  padding: var(--po-space-2) var(--po-space-3);
+  font-family: var(--po-font-sans);
+  font-size: var(--po-text-control-size);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+  background: var(--po-subtle);
+  border: 1px solid var(--po-border);
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: var(--po-space-2);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.po-sidebar-action:hover {
+  border-color: var(--po-accent);
+  color: var(--po-accent);
+}
+.po-sidebar-action:focus-visible {
+  outline: var(--po-focus-outline-width) solid var(--po-focus);
+  outline-offset: var(--po-focus-outline-offset);
+}
+.po-sidebar-action:last-child { margin-bottom: 0; }
+
+/* 侧栏上下文信息 */
+.po-sidebar-context {
+  padding: var(--po-space-3) var(--po-space-4);
+  margin: 0 var(--po-space-3);
+  background: var(--po-subtle);
+  border: 1px solid var(--po-border);
+  border-radius: var(--po-radius-panel);
+  margin-bottom: var(--po-space-4);
+}
+.po-sidebar-ctx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--po-space-2);
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  padding: 2px 0;
+}
+.po-ctx-label { color: var(--po-muted); white-space: nowrap; }
+.po-ctx-value {
+  color: var(--po-text);
+  font-weight: var(--po-weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* 侧栏底部(运行记录) */
+.po-sidebar-footer {
+  margin-top: auto;
+  padding: var(--po-space-3);
+  border-top: 1px solid var(--po-border);
+}
+
+/* ───────── 主体区(flex:1 填满剩余宽度) ───────── */
+.po-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ───────── 会话页(全高 flex 列:消息流+输入框) ───────── */
+.po-page-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ───────── 辅助页(data/validation)内容容器 ───────── */
+.po-page:not(.po-page-chat) {
+  padding: var(--po-space-6);
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 两区布局(辅助页保留) */
+.po-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--po-space-6);
+  align-items: start;
+}
+@media (min-width: 1200px) {
+  .po-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-auto-rows: min-content;
+  }
+}
+.po-main-area,
+.po-task-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--po-space-6);
+  min-width: 0;
+}
+
+/* ───────── 页面切换 ───────── */
+.po-page[hidden] { display: none; }
+
+/* ───────── 未就绪占位 ───────── */
+.po-not-ready {
+  padding: var(--po-space-6);
+  font-size: var(--po-text-control-size);
+  line-height: var(--po-text-control-line);
+  color: var(--po-muted);
+  background: var(--po-subtle);
+  border: 1px dashed var(--po-border);
+  border-radius: var(--po-radius-panel);
+  text-align: center;
+}
+
+/* ───────── 空态按钮组 ───────── */
+.po-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--po-space-3);
+  margin-top: var(--po-space-2);
+}
+.po-empty-actions .po-btn { width: auto; }
+
+/* ───────── 大屏演示模式切换按钮 ───────── */
+.po-demo-toggle {
+  padding: 6px 14px;
+  font-family: var(--po-font-sans);
+  font-size: var(--po-text-aux-size);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+  background: transparent;
+  border: 1px solid var(--po-control-border);
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.po-demo-toggle:hover { border-color: var(--po-accent); color: var(--po-accent); }
+.po-demo-toggle.active {
+  color: var(--po-on-accent);
+  background: var(--po-accent);
+  border-color: var(--po-accent);
+  font-weight: var(--po-weight-semibold);
+}
+
+/* ───────── 大屏演示导航(底部固定,5 步业务闭环) ───────── */
+.po-demo-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--po-surface);
+  border-top: 1px solid var(--po-control-border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+.po-demo-nav-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--po-space-3) var(--po-space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--po-space-2);
+}
+.po-demo-nav-title {
+  font-size: var(--po-text-aux-size);
+  font-weight: var(--po-weight-semibold);
+  color: var(--po-accent);
+  letter-spacing: 0.06em;
+  margin-right: var(--po-space-2);
+}
+.po-demo-step {
+  padding: var(--po-space-2) var(--po-space-3);
+  font-family: var(--po-font-sans);
+  font-size: var(--po-text-control-size);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+  background: var(--po-subtle);
+  border: 1px solid var(--po-border);
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.po-demo-step:hover { border-color: var(--po-accent); color: var(--po-accent); }
+.po-demo-step.active {
+  color: var(--po-on-accent);
+  background: var(--po-accent);
+  border-color: var(--po-accent);
+  font-weight: var(--po-weight-semibold);
+}
+.po-demo-arrow { color: var(--po-muted); font-size: var(--po-text-aux-size); }
+
+/* ───────── 大屏演示模式:放大对话文字与核心结果,收起侧栏 ───────── */
+.po-demo-mode .po-app-shell .po-sidebar { width: 0; padding: 0; border-right: none; overflow: hidden; }
+.po-demo-mode .po-chat-msg-text { font-size: 19px; line-height: 1.7; }
+.po-demo-mode .po-chat-user-text { font-size: 18px; line-height: 1.6; }
+.po-demo-mode .po-chat-card-title { font-size: 18px; }
+.po-demo-mode .po-chat-card-value { font-size: 24px; }
+.po-demo-mode .po-chat-welcome-title { font-size: 40px; line-height: 52px; }
+.po-demo-mode .po-chat-welcome-sub { font-size: 19px; }
+.po-demo-mode .po-chat-input-textarea { font-size: 18px; min-height: 60px; }
+.po-demo-mode .po-chat-quick-btn { font-size: 17px; padding: 12px 20px; }
+/* 演示模式底部留白,避免内容被演示导航遮挡 */
+.po-demo-mode .po-main { padding-bottom: 0; }
+.po-demo-mode .po-page:not(.po-page-chat) { padding-bottom: 80px; }
+
+/* ───────── 移动端适配(<640px:侧栏覆盖抽屉式) ───────── */
+@media (max-width: 640px) {
+  /* 移动端裁剪整页横向溢出:侧栏 fixed+translateX(-100%) 折叠会在视口左侧产生
+     溢出,Chrome 将其计入滚动区域导致出现整页横滚;overflow-x:hidden 传播到
+     视口,锁定 scrollLeft=0,消除整页横滚(注:clip 不传播到视口,无效) */
+  html { overflow-x: hidden; }
+  .po-topbar-inner {
+    flex-wrap: nowrap;
+    min-height: 52px;
+    padding: 0 var(--po-space-3);
+    gap: var(--po-space-2);
+  }
+  .po-health { flex: 0 0 auto; }
+  .po-health #po-health-text { display: none; }
+  .po-brand-sub { display: none; }
+  /* 侧栏移动端:固定定位覆盖层 */
+  .po-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    z-index: 45;
+    width: 260px;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  /* 折叠态:宽度归零收缩(不用 translateX(-100%),fixed+transform 会在视口左侧
+     产生溢出,Chrome 将其计入滚动区域导致整页横滚;width:0 不产生任何溢出) */
+  .po-app-shell.po-sidebar-collapsed .po-sidebar {
+    width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+    box-shadow: none;
+  }
+  .po-page:not(.po-page-chat) { padding: var(--po-space-4); }
+}

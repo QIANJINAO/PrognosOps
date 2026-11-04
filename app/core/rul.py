@@ -10,10 +10,14 @@
 # - 支持固定随机种子保证可复现(用户要求 6)
 # - 所有参数由 MLE 从样本拟合,不硬编码任何论文结果(假设 A5)
 
+import logging
+
 import numpy as np
 from scipy.stats import weibull_min
 
 from app.domain.models import DiscreteRULResult, WeibullFitResult
+
+logger = logging.getLogger(__name__)
 
 
 class RULFitError(Exception):
@@ -122,37 +126,69 @@ def fit_weibull(
         WeibullFitResult(lam, k, log_likelihood, n_samples)
 
     Raises:
-        RULFitError: E3001(样本不足/含非正值/拟合结果非正)
+        RULFitError: E3001(含负值/样本不足/有效正样本不足/拟合失败/似然非有限)
     """
     samples = np.asarray(rul_samples, dtype=float)
 
-    # 样本数校验
-    if len(samples) < 2:
+    # 四类样本统计(S00:负值判断先于样本数校验,-inf 按负值报错)
+    finite_mask = np.isfinite(samples)
+    negative_mask = samples < 0          # 含 -inf;NaN 比较为 False,安全
+    zero_mask = finite_mask & (samples == 0)
+    positive_mask = finite_mask & (samples > 0)
+
+    n_total = int(samples.size)
+    n_non_finite = int(np.sum(~finite_mask))  # NaN / +inf / -inf
+    n_negative = int(np.sum(negative_mask))   # 有限负值 + -inf
+    n_zero = int(np.sum(zero_mask))
+    n_positive = int(np.sum(positive_mask))
+
+    valid_samples = samples[positive_mask]
+
+    # 分支 1:存在负值必须报负值错误(先于样本数校验,避免 [-5.0] 误报"样本不足")
+    if n_negative > 0:
+        neg_idx = np.where(negative_mask)[0][:10]
+        neg_vals = samples[neg_idx].tolist()
         raise RULFitError(
             "E3001",
-            f"Weibull 拟合样本不足:至少需要 2 个样本,实际 {len(samples)} 个",
+            f"Weibull 拟合样本含负值: {neg_vals}(共 {n_negative} 个)",
+            "RUL 样本不应出现负值,请核查预测周期、标签计算或候选样本生成逻辑",
         )
 
-    # 样本值校验:必须全部为正数(Weibull 支撑集为 (0, +∞))
-    non_positive = samples[samples <= 0]
-    if len(non_positive) > 0:
+    # 分支 2:样本总数不足
+    if n_total < 2:
         raise RULFitError(
             "E3001",
-            f"Weibull 拟合样本含非正值: {non_positive[:5].tolist()}",
-            "Weibull 分布的支撑集为 (0, +∞),样本必须全部为正数",
+            f"Weibull 拟合样本不足:至少需要 2 个样本,实际 {n_total} 个",
         )
 
-    # 固定随机种子(用户要求 6:支持固定随机种子)
+    # 分支 3:非有限值(NaN/+inf)记录日志后排除继续(-inf 已在分支 1 报错)
+    if n_non_finite > 0:
+        logger.warning(
+            "Weibull 拟合输入含 %d 个非有限值(NaN/Inf),已排除后继续拟合",
+            n_non_finite,
+        )
+
+    # 分支 4:有效正样本不足
+    if n_positive < 2:
+        raise RULFitError(
+            "E3001",
+            f"Weibull 拟合有效 RUL 样本不足:正值 {n_positive} 个,零值 {n_zero} 个,非有限值 {n_non_finite} 个",
+            "Weibull 分布的支撑集为 (0, +∞),至少需要 2 个有效正样本才能拟合",
+        )
+
+    # 固定随机种子(用户要求 6:支持固定随机种子;保持在所有校验之后、拟合调用之前)
     if random_seed is not None:
         np.random.seed(random_seed)
 
-    # MLE 拟合:双参数 Weibull,位置参数固定为 0(假设 A-W1)
+    # MLE 拟合:双参数 Weibull,位置参数固定为 0(假设 A-W1);只用有效正样本
     try:
-        shape_k, loc, scale_lam = weibull_min.fit(samples, floc=0)
-    except Exception as e:
+        shape_k, loc, scale_lam = weibull_min.fit(valid_samples, floc=0)
+    except Exception:
+        logger.exception("Weibull MLE 拟合数值计算失败(有效样本 %d 个)", n_positive)
         raise RULFitError(
             "E3001",
-            f"Weibull MLE 拟合数值计算失败: {e}",
+            "Weibull MLE 拟合数值计算失败",
+            "拟合过程出现数值异常,请检查样本分布或调整候选样本;详细原因见服务日志。",
         )
 
     # 参数正性校验(用户要求 2:lambda 和 k 必须为正数)
@@ -163,14 +199,30 @@ def fit_weibull(
             "λ 和 k 必须为正数,拟合结果不满足此约束",
         )
 
-    # 计算对数似然值(用于拟合优度评估)
-    log_likelihood = float(np.sum(weibull_min.logpdf(samples, shape_k, loc=0, scale=scale_lam)))
+    # 计算对数似然值(只用有效正样本,防止 -inf 进入响应与 JSON 序列化)
+    log_likelihood = float(np.sum(
+        weibull_min.logpdf(valid_samples, shape_k, loc=0, scale=scale_lam)
+    ))
+
+    if not np.isfinite(log_likelihood):
+        logger.error(
+            "Weibull 对数似然为非有限值: λ=%s, k=%s, n_positive=%d",
+            scale_lam, shape_k, n_positive,
+        )
+        raise RULFitError(
+            "E3001",
+            "Weibull 对数似然为非有限值,拟合结果不可用",
+            "样本分布或拟合参数异常,请调整候选样本;详细原因见服务日志。",
+        )
 
     return WeibullFitResult(
         lam=float(scale_lam),
         k=float(shape_k),
         log_likelihood=log_likelihood,
-        n_samples=len(samples),
+        n_samples=n_positive,
+        n_zero=n_zero,
+        n_negative=n_negative,      # 成功路径必为 0,负值已在分支 1 报错
+        n_non_finite=n_non_finite,  # 成功路径为 NaN/+inf 数量
     )
 
 

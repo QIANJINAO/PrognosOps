@@ -194,18 +194,24 @@ class FeatureResult(BaseModel):
 # ──────────────────────────────────────────────
 
 class WeibullFitResult(BaseModel):
-    """Weibull MLE 拟合结果(用户要求 1/2)。
+    """Weibull MLE 拟合结果(用户要求 1/2,S00 样本过滤扩展)。
 
     Attributes:
         lam: 尺度参数 λ(必须 > 0,用户要求 2)
         k: 形状参数(必须 > 0,用户要求 2)
-        log_likelihood: 对数似然值
-        n_samples: 拟合样本数
+        log_likelihood: 对数似然值(成功响应必为有限值)
+        n_samples: 参与拟合的有效正样本数
+        n_zero: 被排除的 RUL=0 样本数
+        n_negative: 检测到的负值样本数(成功响应中恒为 0)
+        n_non_finite: 被排除的 NaN/Inf 样本数
     """
     lam: float = Field(gt=0, description="尺度参数 λ,必须为正数")
     k: float = Field(gt=0, description="形状参数 k,必须为正数")
     log_likelihood: float
-    n_samples: int
+    n_samples: int = Field(description="参与拟合的有效正样本数")
+    n_zero: int = Field(default=0, description="被排除的 RUL=0 样本数")
+    n_negative: int = Field(default=0, description="检测到的负值样本数(成功响应中恒为 0)")
+    n_non_finite: int = Field(default=0, description="被排除的 NaN/Inf 样本数")
 
 
 class DiscreteRULResult(BaseModel):

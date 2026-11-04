@@ -70,21 +70,98 @@ def test_lambda_and_k_are_positive():
     assert result.k > 0
 
 
-def test_nonpositive_samples_raise_error():
-    """含非正值(0 或负数)的样本应抛出 E3001 错误(要求 2)。"""
+def test_all_positive_succeeds():
+    """全正值样本:正常拟合,n_samples 等于输入数(S00)。"""
+    result = fit_weibull(np.array([10.0, 20.0, 30.0, 40.0]))
+    assert result.n_samples == 4
+    assert result.n_zero == 0
+    assert result.n_negative == 0
+    assert result.n_non_finite == 0
+    assert np.isfinite(result.log_likelihood)
+
+
+def test_positive_zero_mixed_succeeds():
+    """正零混合样本:零值被排除,只用 3 个正样本拟合成功(S00)。"""
     samples = np.array([10.0, 20.0, 0.0, 30.0])  # 含 0
+    result = fit_weibull(samples)
+    assert result.n_samples == 3
+    assert result.n_zero == 1
+    assert result.n_negative == 0
+    assert result.n_non_finite == 0
+    assert np.isfinite(result.log_likelihood)
+    assert result.lam > 0 and result.k > 0
+
+
+def test_negative_samples_raise_error():
+    """含负值的样本应抛出 E3001,消息含"负值",detail 含"预测周期"(S00)。"""
+    samples = np.array([10.0, -5.0, 20.0])
     with pytest.raises(RULFitError) as exc_info:
         fit_weibull(samples)
     assert exc_info.value.code == "E3001"
-    assert "非正值" in exc_info.value.message
+    assert "负值" in exc_info.value.message
+    assert "预测周期" in exc_info.value.detail
+
+
+def test_single_negative_reports_negative_not_insufficient():
+    """单个负值 [-5.0] 应返回"负值"错误,而非"样本不足"(S00 分支顺序)。"""
+    with pytest.raises(RULFitError) as exc_info:
+        fit_weibull(np.array([-5.0]))
+    assert exc_info.value.code == "E3001"
+    assert "负值" in exc_info.value.message
+    assert "不足" not in exc_info.value.message
 
 
 def test_insufficient_samples_raise_error():
-    """样本数不足 2 个时应抛出 E3001 错误。"""
+    """样本数不足 2 个时应抛出 E3001 错误(保留原有测试)。"""
     with pytest.raises(RULFitError) as exc_info:
         fit_weibull(np.array([50.0]))
     assert exc_info.value.code == "E3001"
     assert "不足" in exc_info.value.message
+
+
+def test_insufficient_positive_samples_raise_error(monkeypatch):
+    """正样本不足应报 E3001,消息含统计信息,且 fit 未被调用(S00)。"""
+    def fail_fit(*args, **kwargs):
+        raise AssertionError("weibull_min.fit 不应在正样本不足时被调用")
+    monkeypatch.setattr("app.core.rul.weibull_min.fit", fail_fit)
+    samples = np.array([50.0, 0.0, 0.0])  # 正值 1 个,零值 2 个
+    with pytest.raises(RULFitError) as exc_info:
+        fit_weibull(samples)
+    assert exc_info.value.code == "E3001"
+    msg = exc_info.value.message
+    assert "有效 RUL 样本不足" in msg
+    assert "正值 1 个" in msg
+    assert "零值 2 个" in msg
+
+
+def test_all_zero_samples_raise_error(monkeypatch):
+    """全零样本应抛出 E3001 可读提示,且 fit 未被调用(S00)。"""
+    def fail_fit(*args, **kwargs):
+        raise AssertionError("weibull_min.fit 不应在全零样本时被调用")
+    monkeypatch.setattr("app.core.rul.weibull_min.fit", fail_fit)
+    with pytest.raises(RULFitError) as exc_info:
+        fit_weibull(np.array([0.0, 0.0, 0.0]))
+    assert exc_info.value.code == "E3001"
+    assert "有效 RUL 样本不足" in exc_info.value.message
+
+
+def test_nan_inf_samples_excluded():
+    """NaN/+inf 样本被排除后继续拟合,n_non_finite 记录数量(S00)。"""
+    samples = np.array([10.0, 15.0, 20.0, 25.0, 30.0, np.nan, np.inf])
+    result = fit_weibull(samples)
+    assert result.n_samples == 5
+    assert result.n_non_finite == 2
+    assert result.n_zero == 0
+    assert result.n_negative == 0
+    assert np.isfinite(result.log_likelihood)
+
+
+def test_negative_inf_reports_negative():
+    """-inf 按负值报错,而非归入非有限值静默排除(S00)。"""
+    with pytest.raises(RULFitError) as exc_info:
+        fit_weibull(np.array([10.0, 20.0, -np.inf]))
+    assert exc_info.value.code == "E3001"
+    assert "负值" in exc_info.value.message
 
 
 # ──────────────────────────────────────────────
@@ -283,3 +360,100 @@ def test_estimate_rul_distribution_full_pipeline():
     assert abs(sum(discrete_rul.probs) - 1.0) < 1e-6
     assert discrete_rul.is_normalized is True
     assert discrete_rul.cdf[-1] == pytest.approx(1.0, abs=1e-6)
+
+
+# ──────────────────────────────────────────────
+# S00 补充:G1/G2 spy 测试(拟合与似然只用正样本)
+# ──────────────────────────────────────────────
+
+def test_fit_uses_only_positive_samples(monkeypatch):
+    """G1:拟合只收到正样本(floc=0),零值/非有限值不进入 weibull_min.fit(S00)。"""
+    captured = {}
+    real_fit = weibull_min.fit
+
+    def spy_fit(data, *args, **kwargs):
+        captured["data"] = np.asarray(data).copy()
+        assert "floc" in kwargs and kwargs["floc"] == 0
+        return real_fit(data, *args, **kwargs)
+
+    monkeypatch.setattr("app.core.rul.weibull_min.fit", spy_fit)
+
+    result = fit_weibull(np.array([10.0, 20.0, 0.0, 30.0]))
+
+    assert np.all(captured["data"] > 0)
+    assert len(captured["data"]) == 3
+    assert result.n_samples == 3
+    assert result.n_zero == 1
+    assert np.isfinite(result.log_likelihood)
+
+
+def test_log_likelihood_uses_only_positive_samples(monkeypatch):
+    """G2:对数似然只用有效正样本计算,n_samples 语义为正样本数(S00)。"""
+    captured = {}
+    real_logpdf = weibull_min.logpdf
+
+    def spy_logpdf(data, *args, **kwargs):
+        captured["data"] = np.asarray(data).copy()
+        return real_logpdf(data, *args, **kwargs)
+
+    monkeypatch.setattr("app.core.rul.weibull_min.logpdf", spy_logpdf)
+
+    result = fit_weibull(np.array([10.0, 20.0, 0.0, 30.0, np.nan]))
+
+    assert np.all(captured["data"] > 0)
+    assert len(captured["data"]) == 3
+    assert result.n_samples == 3
+    assert result.n_non_finite == 1
+    assert np.isfinite(result.log_likelihood)
+
+
+# ──────────────────────────────────────────────
+# S00 补充:接口回归(/api/rul/predict 响应含样本过滤字段)
+# ──────────────────────────────────────────────
+
+def test_api_rul_predict_contains_sample_filter_fields():
+    """接口回归:合成数据 /api/rul/predict 200,响应含 weibull.n_zero 等字段(S00)。"""
+    import io
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    # 生成带退化趋势的合成 FD001 数据(5 单元,参考集可能含 RUL=0 样本)
+    rng = np.random.default_rng(42)
+    selected = [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21]
+    lines = []
+    for u in range(1, 6):
+        n_cycles = int(rng.integers(80, 200))
+        base = float(rng.uniform(80, 120))
+        slope = float(rng.uniform(0.1, 0.4))
+        for t in range(1, n_cycles + 1):
+            sensors = []
+            for s in range(1, 22):
+                if s in selected:
+                    val = base + slope * t + float(rng.normal(0, 0.5))
+                else:
+                    val = float(rng.normal(0, 0.01))
+                sensors.append(round(val, 6))
+            fields = [str(u), str(t), "0.0", "-0.0", "100.0"] + [str(v) for v in sensors]
+            lines.append(" ".join(fields))
+    csv_text = "\n".join(lines)
+
+    r = client.post(
+        "/api/data/upload",
+        files={"file": ("demo_train.csv", io.BytesIO(csv_text.encode("utf-8")), "text/csv")},
+    )
+    assert r.status_code == 200, f"上传失败: {r.status_code} {r.text[:200]}"
+    session_id = r.json()["session_id"]
+
+    r = client.post("/api/rul/predict", json={
+        "session_id": session_id, "unit_id": 1, "k_nn": 20, "random_seed": 42,
+    })
+    assert r.status_code == 200, f"RUL 预测失败: {r.status_code} {r.text[:300]}"
+    rul = r.json()
+    w = rul["weibull"]
+    assert w["lam"] > 0 and w["k"] > 0
+    assert "n_zero" in w
+    assert "n_negative" in w
+    assert "n_non_finite" in w
+    assert w["n_negative"] == 0  # 成功路径负值恒为 0
+    assert np.isfinite(w["log_likelihood"])

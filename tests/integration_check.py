@@ -123,12 +123,14 @@ assert "unit_id" in header and "strategy" in header and "regret" in header
 n_lines = len([l for l in csv_out.strip().split("\n") if l])
 print(f"[8] CSV 导出 OK: {n_lines} 行, 表头={header}")
 
-# ───────── 9. 静态文件可访问性 ─────────
-for path in ["/static/index.html", "/static/css/style.css", "/static/js/api.js",
-             "/static/js/charts.js", "/static/js/demo-data.js", "/static/js/app.js"]:
+# ───────── 9. 静态文件可访问性(S20:默认入口已切换,旧 style.css/app.js 清理,新增 vendor) ─────────
+for path in ["/static/index.html", "/static/css/tokens.css", "/static/css/components.css",
+             "/static/css/layout.css", "/static/css/motion.css", "/static/js/api.js",
+             "/static/js/charts.js", "/static/js/demo-data.js",
+             "/static/vendor/chart.umd.min.js"]:
     r = client.get(path)
     assert r.status_code == 200, f"静态文件不可访问: {path} → {r.status_code}"
-print(f"[9] 静态文件 OK: 6 个文件全部可访问(index.html + css + 4 个 js)")
+print(f"[9] 静态文件 OK: 9 个文件全部可访问(index.html + 4 css + 3 js + vendor)")
 
 # ───────── 10. 错误处理 ─────────
 r = client.get("/api/data/sensor-trend?session_id=sess_nonexist&unit_id=1")

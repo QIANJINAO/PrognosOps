@@ -15,6 +15,12 @@ build/
 .coverage
 htmlcov/
 
+# 前端依赖与自动生成的测试产物
+node_modules/
+playwright-report/
+test-results/
+tests/frontend/screenshots/
+
 # IDE
 .vscode/
 .idea/

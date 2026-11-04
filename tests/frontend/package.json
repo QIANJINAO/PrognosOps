@@ -1,0 +1,12 @@
+{
+  "name": "prognosops-frontend-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PrognosOps 前端行为回归测试(Playwright Chromium)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

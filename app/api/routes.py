@@ -435,6 +435,19 @@ async def rul_predict(req: RULPredictRequest):
         f"参考集规模:{len(ref_ruls)} 个样本(来自 {len(other_units[unit_col].unique())} 个单元,采样间隔 {req.step} 周期)。",
     ]
 
+    # S00:样本过滤提示(零值/非有限值被排除时追加说明)
+    if weibull_fit.n_zero > 0:
+        assumptions.append(
+            f"【样本过滤】kNN 候选样本中有 {weibull_fit.n_zero} 个 RUL=0"
+            f"(设备已到失效周期),不参与 Weibull 拟合;"
+            f"实际参与拟合的正样本 {weibull_fit.n_samples} 个。"
+        )
+    if weibull_fit.n_non_finite > 0:
+        assumptions.append(
+            f"【样本过滤】另有 {weibull_fit.n_non_finite} 个 NaN/Inf 样本"
+            f"在拟合前被排除。"
+        )
+
     return RULPredictResponse(
         session_id=req.session_id,
         unit_id=req.unit_id,

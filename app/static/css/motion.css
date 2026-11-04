@@ -1,0 +1,79 @@
+/* ═══════════════════════════════════════════════
+   PrognosOps 状态动效(motion.css)
+   作用域:.po-app,依赖 tokens.css / components.css / layout.css
+   设计约束(施工单 S19):
+   - 真实状态切换淡入 120–160ms、ease-out
+   - 参数应用成功高亮 600ms 后 160ms 淡出
+   - 请求 spinner 800ms、linear
+   - 不做假百分比、打字机、数字滚动、悬浮位移或图表数值过渡
+   - prefers-reduced-motion:reduce 关闭循环与位移,改静态图标与文字
+   - 动效仅由真实状态变化触发,不改变卡片尺寸、不抢滚动位置
+   ═══════════════════════════════════════════════ */
+
+/* ───────── 状态切换淡入(140ms ease-out,hidden→visible 或 type 变化时触发) ───────── */
+.po-status-bar {
+  animation: po-fade-in 140ms ease-out;
+}
+@keyframes po-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ───────── 运行中状态色 + spinner(800ms linear infinite) ───────── */
+/* po-status-running:workspace 分析进行中(setMainStatus('running')) */
+.po-status-running {
+  color: var(--po-info-fg);
+  background: var(--po-info-bg);
+}
+/* spinner:旋转圆环,绑定既有运行中状态 class */
+.po-status-running::before,
+.po-agent-thinking::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: var(--po-space-2);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: po-spin 800ms linear infinite;
+}
+@keyframes po-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ───────── 参数应用成功高亮(600ms 高亮 + 160ms 淡出 = 760ms) ───────── */
+/* 由 scenario-panel.js 在应用成功后添加,760ms 后移除 */
+.po-cand-just-applied {
+  animation: po-apply-highlight 760ms ease-out;
+}
+@keyframes po-apply-highlight {
+  0%    { background: var(--po-accent-soft); box-shadow: 0 0 0 2px var(--po-accent); }
+  78.9% { background: var(--po-accent-soft); box-shadow: 0 0 0 2px var(--po-accent); }
+  100%  { background: transparent; box-shadow: none; }
+}
+
+/* ───────── reduced-motion:关闭循环与位移,改静态图标 ───────── */
+@media (prefers-reduced-motion: reduce) {
+  /* 淡入与高亮:直接显示最终状态 */
+  .po-status-bar,
+  .po-cand-just-applied {
+    animation: none;
+  }
+  /* 循环动效全部停止:spinner / 时间线脉冲 */
+  .po-status-running::before,
+  .po-agent-thinking::before,
+  .po-step-running .po-step-marker {
+    animation: none;
+  }
+  /* spinner 改静态实心圆环(不旋转,仍可辨识"运行中") */
+  .po-status-running::before,
+  .po-agent-thinking::before {
+    border-top-color: currentColor;
+  }
+  /* 时间线脉冲改静态高亮色 */
+  .po-step-running .po-step-marker {
+    background: var(--po-accent);
+  }
+}

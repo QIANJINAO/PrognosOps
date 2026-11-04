@@ -1,7 +1,7 @@
-# 边界条件与错误处理完整测试(20 项)
+# 边界条件与错误处理测试(18 项)
 # 覆盖:数据验证(1-8)、参数验证(9-12)、概率验证(13)、
-#       LLM 验证(14-15)、后端异常(16)、在线 regret(17)、
-#       前端防重复提交(18)、导出一致性(19)、移动端适配(20)
+#       LLM 验证(14-15)、后端异常(16)、在线 regret(17)、导出一致性(19)
+# S20:前端防重复提交(18)与移动端适配(20)已移交浏览器行为用例
 
 import io
 import random
@@ -420,37 +420,8 @@ class TestOnlineRegretNull:
             assert strategy["failure_frequency"] is None
 
 
-# ══════════════════════════════════════════════
-# 18: 前端防重复提交
-# ══════════════════════════════════════════════
-
-class TestFrontendDuplicateSubmit:
-    """前端防重复提交机制测试(静态分析 JS 源码)。"""
-
-    def test_18_frontend_prevents_duplicate_submit(self):
-        """18. 前端重复提交防护:所有异步按钮在请求期间禁用。"""
-        import os
-        api_js_path = os.path.join(os.path.dirname(__file__), "..", "app", "static", "js", "api.js")
-        app_js_path = os.path.join(os.path.dirname(__file__), "..", "app", "static", "js", "app.js")
-
-        with open(api_js_path, encoding="utf-8") as f:
-            api_js = f.read()
-        with open(app_js_path, encoding="utf-8") as f:
-            app_js = f.read()
-
-        # withLoading 工具函数:进入时禁用按钮,完成后恢复
-        assert "if (btn.disabled) return" in api_js, \
-            "withLoading 缺少防重复提交守卫(if btn.disabled return)"
-        assert "btn.disabled = true" in api_js, "withLoading 未在请求前禁用按钮"
-        assert "btn.disabled = false" in api_js, "withLoading 未在完成后恢复按钮"
-
-        # Agent 提交按钮:手动禁用/恢复
-        assert "btn.disabled = true" in app_js, "submitQuery 未在请求前禁用按钮"
-        assert "btn.disabled = false" in app_js, "submitQuery 未在完成后恢复按钮"
-
-        # 上传区域:请求期间禁用交互
-        assert "dropZoneDisabled(true)" in app_js, "上传期间未禁用拖放区域"
-        assert "dropZoneDisabled(false)" in app_js, "上传完成后未恢复拖放区域"
+# S20:前端防重复提交检查(test_18)已移交浏览器行为用例(T20-performance.spec.js),
+# 旧页 app.js 随默认入口切换清理,静态字符串检查不再适用。
 
 
 # ══════════════════════════════════════════════
@@ -520,47 +491,5 @@ class TestExportConsistency:
                     f"(unit={key[0]}, cycle={key[1]})"
 
 
-# ══════════════════════════════════════════════
-# 20: 手机端页面不溢出
-# ══════════════════════════════════════════════
-
-class TestMobileViewport:
-    """移动端页面适配测试(静态分析 HTML/CSS)。"""
-
-    def test_20_mobile_no_overflow(self):
-        """20. 手机端页面不溢出:viewport 元标签 + 响应式 CSS + 防溢出规则。"""
-        import os
-        html_path = os.path.join(os.path.dirname(__file__), "..", "app", "static", "index.html")
-        css_path = os.path.join(os.path.dirname(__file__), "..", "app", "static", "css", "style.css")
-
-        with open(html_path, encoding="utf-8") as f:
-            html = f.read()
-        with open(css_path, encoding="utf-8") as f:
-            css = f.read()
-
-        # 1. viewport 元标签存在(移动端适配基础)
-        assert 'name="viewport"' in html, "index.html 缺少 viewport 元标签"
-        assert "width=device-width" in html, "viewport 未设置 width=device-width"
-        assert "initial-scale=1.0" in html, "viewport 未设置 initial-scale=1.0"
-
-        # 2. 响应式媒体查询存在
-        assert "@media (max-width: 640px)" in css, \
-            "style.css 缺少移动端媒体查询(@media max-width: 640px)"
-
-        # 3. 全局防溢出:box-sizing: border-box
-        assert "box-sizing: border-box" in css, \
-            "缺少全局 box-sizing: border-box(防止 padding 撑破容器)"
-
-        # 4. 表格/代码块防溢出:overflow-x: auto
-        assert "overflow-x: auto" in css, \
-            "缺少 overflow-x: auto(宽表格/代码块在窄屏可横向滚动而非撑破页面)"
-
-        # 5. 长文本换行:word-break 或 white-space 处理
-        assert "word-break" in css or "overflow-wrap" in css, \
-            "缺少长文本换行规则(word-break/overflow-wrap)"
-
-        # 6. 页面根容器无固定宽度(应使用 max-width 而非 width)
-        # 检查不存在 body { width: 1200px } 这类固定宽度
-        import re
-        fixed_width = re.search(r"body\s*\{[^}]*width\s*:\s*\d{4,}px", css)
-        assert fixed_width is None, "body 存在固定大宽度,会导致移动端横向溢出"
+# S20:移动端适配检查(test_20)已移交浏览器行为用例(T18-usability.spec.js 六视口验证),
+# 旧页 style.css 随默认入口切换清理,静态字符串检查不再适用。

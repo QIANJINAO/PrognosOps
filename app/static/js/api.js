@@ -3,7 +3,7 @@
  * 职责:统一调用后端 9 个端点、错误中文转换、加载状态管理
  * 所有响应字段名严格对应后端 app/domain/models.py 定义,不做任何猜测
  */
-const API = (() => {
+window.API = (() => {
   'use strict';
 
   // ───────── 错误码 → 中文描述映射 ─────────
@@ -20,49 +20,72 @@ const API = (() => {
   };
 
   /**
-   * 统一错误处理:从 fetch 响应中提取后端错误信息并转为中文
-   * 后端错误结构:{"detail": {"code": "Exxxx", "message": "...", "detail": "..."}}
+   * 统一错误处理:将 fetch 响应归一化为 {kind, code, status, message, detail, fieldErrors}
+   * detail 三态:数组(422 校验按 loc/msg 生成字段错误)/对象(业务错误 {code,message,detail})/字符串
+   * 非 JSON 响应保留 HTTP 状态与非空中文摘要
    */
   async function handleResponse(res) {
     if (res.ok) return res;
-    let errMsg = `请求失败(HTTP ${res.status})`;
-    let errDetail = '';
-    try {
-      const body = await res.json();
-      // FastAPI HTTPException 格式
-      if (body.detail && typeof body.detail === 'object') {
-        const code = body.detail.code || '';
-        const prefix = ERROR_CN[code] ? `[${code}] ${ERROR_CN[code]}` : code;
-        errMsg = prefix ? `${prefix}:${body.detail.message}` : body.detail.message;
-        errDetail = body.detail.detail || '';
-      } else if (body.detail && typeof body.detail === 'string') {
-        errMsg = body.detail;
+    const err = { kind: 'http', code: '', status: res.status, message: `请求失败(HTTP ${res.status})`, detail: null, fieldErrors: [] };
+    let rawText = '';
+    try { rawText = await res.text(); } catch (_) { /* 无法读取响应体 */ }
+    let body = null;
+    if (rawText && rawText.trim()) {
+      try { body = JSON.parse(rawText); }
+      catch (_) { err.message += `:${rawText.trim().slice(0, 120)}`; } // 非 JSON:保留摘要
+    }
+    if (body !== null) {
+      const d = body.detail;
+      if (Array.isArray(d)) {
+        // FastAPI 422 校验错误数组:按 loc/msg 生成字段错误
+        err.kind = 'validation';
+        err.message = `请求参数校验失败(HTTP ${res.status})`;
+        err.detail = d;
+        err.fieldErrors = d.map(item => ({
+          field: Array.isArray(item.loc) ? item.loc.filter(p => typeof p === 'string').join('.') : '',
+          message: item.msg || '校验失败',
+        }));
+      } else if (d && typeof d === 'object') {
+        // 后端业务错误 {code, message, detail}
+        err.kind = 'business';
+        err.code = d.code || '';
+        const cn = ERROR_CN[err.code];
+        err.message = err.code
+          ? (cn ? `[${err.code}] ${cn}${d.message ? ':' + d.message : ''}` : `[${err.code}] ${d.message || ''}`)
+          : (d.message || err.message);
+        err.detail = d.detail || null;
+      } else if (typeof d === 'string') {
+        err.message = d;
       }
-    } catch (_) { /* 响应非 JSON,使用默认消息 */ }
-    const err = new Error(errMsg);
-    err.detail = errDetail;
-    err.status = res.status;
+    }
     throw err;
   }
 
-  /** 网络异常统一包装 */
+  /** 网络/超时/停止等待统一包装为归一化错误对象 */
   async function request(fn) {
     try {
       return await fn();
     } catch (err) {
+      if (err && typeof err === 'object' && 'kind' in err) throw err; // 已归一化
       if (err instanceof TypeError) {
-        throw new Error('无法连接服务器,请确认后端服务已启动(uvicorn app.main:app --port 8080)');
+        throw { kind: 'network', code: '', status: 0, message: '无法连接服务器,请检查网络连接后重试', detail: null, fieldErrors: [] };
       }
-      throw err;
+      if (err instanceof DOMException && err.name === 'TimeoutError') {
+        throw { kind: 'timeout', code: '', status: 0, message: '请求超时,请稍后重试', detail: null, fieldErrors: [] };
+      }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw { kind: 'aborted', code: '', status: 0, message: '请求已取消', detail: null, fieldErrors: [] };
+      }
+      throw { kind: 'http', code: '', status: 0, message: (err && err.message) || '请求失败', detail: null, fieldErrors: [] };
     }
   }
 
   // ───────── 端点封装 ─────────
 
   /** GET /api/health → {status, service, version, message} */
-  async function health() {
+  async function health(options = {}) {
     return request(async () => {
-      const res = await fetch('/api/health');
+      const res = await fetch('/api/health', { signal: options.signal });
       return handleResponse(res).then(r => r.json());
     });
   }
@@ -71,11 +94,11 @@ const API = (() => {
    * POST /api/data/upload (multipart/form-data, 字段名 file)
    * → UploadResponse {session_id, overview, quality_report}
    */
-  async function uploadCsv(file) {
+  async function uploadCsv(file, options = {}) {
     return request(async () => {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/data/upload', { method: 'POST', body: fd });
+      const res = await fetch('/api/data/upload', { method: 'POST', body: fd, signal: options.signal });
       return handleResponse(res).then(r => r.json());
     });
   }
@@ -84,9 +107,9 @@ const API = (() => {
    * GET /api/data/sensor-trend?session_id=&unit_id=
    * → SensorTrendResponse {session_id, unit_id, cycles, sensor_names, sensor_data}
    */
-  async function sensorTrend(sessionId, unitId) {
+  async function sensorTrend(sessionId, unitId, options = {}) {
     return request(async () => {
-      const res = await fetch(`/api/data/sensor-trend?session_id=${encodeURIComponent(sessionId)}&unit_id=${unitId}`);
+      const res = await fetch(`/api/data/sensor-trend?session_id=${encodeURIComponent(sessionId)}&unit_id=${unitId}`, { signal: options.signal });
       return handleResponse(res).then(r => r.json());
     });
   }
@@ -96,12 +119,13 @@ const API = (() => {
    * 请求:RULPredictRequest {session_id, unit_id, cycle?, k_nn?, h_max?, random_seed?, step?}
    * 响应:RULPredictResponse {session_id, unit_id, cycle, weibull, discrete, n_reference, assumptions}
    */
-  async function rulPredict(payload) {
+  async function rulPredict(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/rul/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
@@ -113,12 +137,13 @@ const API = (() => {
    * 响应:DecisionResult {params, windows, cost_curve, total_cost_curve, quality_curve,
    *   total_quality_curve, failure_prob_curve, expected_life_curve, strategies, ieo_traces, assumptions}
    */
-  async function decisionRun(payload) {
+  async function decisionRun(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/decision/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
@@ -129,12 +154,13 @@ const API = (() => {
    * 请求:RegretRequest {strategy, chosen_window, true_rul?, params?, windows?}
    * 响应:RegretResult {strategy, true_rul, chosen_window, actual_cost, optimal_cost, regret}
    */
-  async function decisionRegret(payload) {
+  async function decisionRegret(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/decision/regret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
@@ -145,12 +171,13 @@ const API = (() => {
    * 请求:FailureFrequencyRequest {probs, windows?, h_max?}
    * 响应:FailureFrequencyResult {windows, failure_probs, h_max}
    */
-  async function failureFrequency(payload) {
+  async function failureFrequency(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/decision/failure-frequency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
@@ -163,12 +190,13 @@ const API = (() => {
    *   mae_mean, mae_std, strategies, eto_ieo_diff, sensitivity, points, repeat_metrics,
    *   assumptions, data_sufficiency_note}
    */
-  async function backtestRun(payload) {
+  async function backtestRun(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/backtest/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
@@ -178,12 +206,13 @@ const API = (() => {
    * POST /api/backtest/export-csv → text/csv(PlainTextResponse)
    * 返回 CSV 文本字符串
    */
-  async function backtestExportCsv(payload) {
+  async function backtestExportCsv(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/backtest/export-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.text());
     });
@@ -197,77 +226,19 @@ const API = (() => {
    * 安全:API Key 仅在后端环境变量中,前端不持有;probs/params 由前端状态注入,
    *       后端工具执行真实计算,大模型不计算数值。
    */
-  async function agentChat(payload) {
+  async function agentChat(payload, options = {}) {
     return request(async () => {
       const res = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: options.signal,
       });
       return handleResponse(res).then(r => r.json());
     });
   }
 
-  // ───────── 加载状态管理(禁止重复提交) ─────────
-
-  /**
-   * 包装按钮的异步操作:禁用按钮 + 显示加载指示 + 完成后恢复
-   * @param {HTMLButtonElement} btn - 触发操作的按钮
-   * @param {HTMLElement} loadingEl - 加载提示元素(hidden 切换)
-   * @param {Function} asyncFn - 异步操作函数
-   */
-  async function withLoading(btn, loadingEl, asyncFn) {
-    if (btn.disabled) return; // 防重复提交
-    btn.disabled = true;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i>处理中...';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    if (loadingEl) loadingEl.classList.remove('hidden');
-    try {
-      return await asyncFn();
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-      if (loadingEl) loadingEl.classList.add('hidden');
-    }
-  }
-
-  // ───────── Toast 通知 ─────────
-
-  /**
-   * 显示 Toast 通知(自动消失)
-   * @param {string} type - success / error / warning
-   * @param {string} title - 标题
-   * @param {string} msg - 消息内容
-   */
-  function showToast(type, title, msg) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const iconMap = { success: 'check-circle-2', error: 'alert-circle', warning: 'alert-triangle' };
-    toast.innerHTML = `
-      <i data-lucide="${iconMap[type] || 'info'}" class="h-5 w-5 shrink-0 mt-0.5"></i>
-      <div>
-        <div class="toast-title">${title}</div>
-        ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
-      </div>`;
-    container.appendChild(toast);
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    // 5 秒后自动移除
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s';
-      setTimeout(() => toast.remove(), 300);
-    }, 5000);
-  }
-
-  /** 显示 API 错误(中文) */
-  function showApiError(err) {
-    showToast('error', '操作失败', err.message + (err.detail ? `\n${err.detail}` : ''));
-  }
-
-  // ───────── 工具函数 ─────────
+  // ───────── 工具函数(S20:旧页专属的 withLoading/showToast/showApiError/downloadText/downloadJson 已随旧页清理) ─────────
 
   /** 格式化数字:保留指定位数,极大/极小值用科学计数法 */
   function fmtNum(v, decimals = 4) {
@@ -285,27 +256,10 @@ const API = (() => {
     return (v * 100).toFixed(decimals) + '%';
   }
 
-  /** 下载文本内容为文件 */
-  function downloadText(filename, text, mime = 'text/plain') {
-    const blob = new Blob([text], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  /** 下载 JSON 为文件 */
-  function downloadJson(filename, obj) {
-    downloadText(filename, JSON.stringify(obj, null, 2), 'application/json');
-  }
-
   return {
     health, uploadCsv, sensorTrend, rulPredict,
     decisionRun, decisionRegret, failureFrequency,
     backtestRun, backtestExportCsv, agentChat,
-    withLoading, showToast, showApiError,
-    fmtNum, fmtPct, downloadText, downloadJson,
+    fmtNum, fmtPct,
   };
 })();
