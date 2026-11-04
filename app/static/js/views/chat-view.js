@@ -224,6 +224,8 @@ window.PO.chatView = (() => {
 
   function render(s) {
     checkDataLoad(s);
+    // 导入检测会追加消息并触发嵌套通知，后续渲染必须使用最新快照。
+    s = PO.getState();
     renderWelcome(s);
     renderMessages(s);
     renderQuickTasks(s);
@@ -438,12 +440,14 @@ window.PO.chatView = (() => {
       if (r.stale) return;
       // 原子替换:resetDataset → setData → setContext(checkDataLoad 自动追加卡片)
       PO.resetDataset();
+      const unitIds = (r.result.overview.units || []).map(u => u.unit_id);
       PO.setData({
         overview: r.result.overview,
         qualityReport: r.result.quality_report,
-        unitIds: (r.result.overview.units || []).map(u => u.unit_id),
+        unitIds: unitIds,
       });
-      PO.setContext({ sessionId: r.result.session_id, fileName: file.name });
+      // 默认选中首台设备，使导入后的“分析当前设备”可以直接执行。
+      PO.setContext({ sessionId: r.result.session_id, fileName: file.name, unitId: unitIds[0] ?? null });
     } catch (err) {
       let msg = '上传失败:' + (err.message || '请求失败');
       if (err.fieldErrors && err.fieldErrors.length) {

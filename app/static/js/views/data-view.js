@@ -67,12 +67,14 @@ window.PO.dataView = (() => {
   function onUploadSuccess(fileName, resp) {
     // S06:原子替换——先清旧结果/对话/候选,再写新数据
     PO.resetDataset();
+    const unitIds = (resp.overview.units || []).map(u => u.unit_id);
     PO.setData({
       overview: resp.overview,
       qualityReport: resp.quality_report,
-      unitIds: (resp.overview.units || []).map(u => u.unit_id),
+      unitIds: unitIds,
     });
-    PO.setContext({ sessionId: resp.session_id, fileName: fileName });
+    // 与对话入口保持一致，导入后默认选择首台设备。
+    PO.setContext({ sessionId: resp.session_id, fileName: fileName, unitId: unitIds[0] ?? null });
     setStatus('success', fileName);
     renderAll(PO.getState());
   }
