@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · PrognosOps 维策</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <!-- 复用主应用设计令牌与组件样式,保持视觉一致 -->
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/motion.css">
+  <!-- 登录页专属样式 -->
+  <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body class="po-app">
+
+  <!-- ═══════════════ 登录页主体(居中卡片布局) ═══════════════ -->
+  <main class="po-login-wrap">
+
+    <!-- 品牌区(与顶栏品牌一致:冰蓝竖标 + 名称) -->
+    <div class="po-login-brand">
+      <span class="po-brand-mark po-login-brand-mark" aria-hidden="true"></span>
+      <span class="po-login-brand-name">PrognosOps</span>
+      <span class="po-login-brand-sub">维策 Agent</span>
+    </div>
+
+    <!-- 登录卡片 -->
+    <section class="po-login-card" aria-labelledby="po-login-title">
+      <h1 class="po-login-title" id="po-login-title">登录工作台</h1>
+      <p class="po-login-desc">决策导向的预测性维护智能体 —— 不看预测准不准,只看这次检修值不值</p>
+
+      <!-- 错误提示区(登录失败时显示) -->
+      <div class="po-login-error" id="po-login-error" role="alert" hidden></div>
+
+      <form class="po-login-form" id="po-login-form" novalidate>
+        <div class="po-field">
+          <label class="po-field-label" for="po-login-username">账号</label>
+          <input
+            class="po-input"
+            type="text"
+            id="po-login-username"
+            name="username"
+            placeholder="请输入账号"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="po-field">
+          <label class="po-field-label" for="po-login-password">密码</label>
+          <input
+            class="po-input"
+            type="password"
+            id="po-login-password"
+            name="password"
+            placeholder="请输入密码"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button class="po-btn po-btn-primary po-login-submit" id="po-login-submit" type="submit">
+          登 录
+        </button>
+      </form>
+
+      <!-- 演示账户提示(方便演示与评审) -->
+      <div class="po-login-hint">
+        <p class="po-login-hint-title">演示账户</p>
+        <p class="po-login-hint-row"><code>admin</code> / <code>admin123</code>(管理员)</p>
+        <p class="po-login-hint-row"><code>engineer</code> / <code>eng123</code>(运维工程师)</p>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="po-login-footer">
+      <span class="po-health">
+        <span class="po-health-dot" id="po-health-dot"></span>
+        <span id="po-health-text">检测中</span>
+      </span>
+    </footer>
+  </main>
+
+  <!-- 登录交互脚本 -->
+  <script src="/static/js/login.js"></script>
+</body>
+</html>

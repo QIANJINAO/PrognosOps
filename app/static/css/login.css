@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════════
+   PrognosOps 登录页样式(login.css)
+   作用域:.po-app,依赖 tokens.css / components.css
+   布局:全屏居中卡片,航空指挥舱质感
+   ═══════════════════════════════════════════════ */
+
+/* ───────── 页面容器:全屏居中 ───────── */
+.po-login-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--po-space-8);
+  padding: var(--po-space-8) var(--po-space-4);
+  /* 浅色渐变底:白 → 浅灰蓝,呼应主应用面板色 */
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(43, 143, 212, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, var(--po-bg) 0%, var(--po-surface) 100%);
+}
+
+/* ───────── 品牌区(卡片上方) ───────── */
+.po-login-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--po-space-2);
+  white-space: nowrap;
+}
+.po-login-brand-mark {
+  width: 4px;
+  height: 28px;
+  align-self: center;
+}
+.po-login-brand-name {
+  font-size: var(--po-text-page-title-size);
+  font-weight: var(--po-weight-semibold);
+  line-height: var(--po-text-page-title-line);
+  color: var(--po-text);
+  letter-spacing: 0.02em;
+}
+.po-login-brand-sub {
+  font-size: var(--po-text-body-size);
+  line-height: var(--po-text-body-line);
+  color: var(--po-accent);
+  opacity: 0.85;
+}
+
+/* ───────── 登录卡片 ───────── */
+.po-login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--po-space-8) var(--po-space-8) var(--po-space-6);
+  background: var(--po-bg);
+  border: 1px solid var(--po-border);
+  border-radius: var(--po-radius-drawer);
+  box-shadow: var(--po-shadow-overlay);
+  /* 入场淡入(配合 motion.css 的 reduced-motion 约束) */
+  animation: po-login-fade-in 0.35s ease-out both;
+}
+
+.po-login-title {
+  font-size: var(--po-text-section-title-size);
+  font-weight: var(--po-weight-semibold);
+  line-height: var(--po-text-section-title-line);
+  color: var(--po-text);
+  text-align: center;
+}
+.po-login-desc {
+  margin-top: var(--po-space-2);
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  color: var(--po-muted);
+  text-align: center;
+}
+
+/* ───────── 表单区 ───────── */
+.po-login-form {
+  margin-top: var(--po-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--po-space-4);
+}
+.po-login-submit {
+  margin-top: var(--po-space-2);
+  font-size: var(--po-text-body-size);
+  font-weight: var(--po-weight-semibold);
+  min-height: 48px;
+  letter-spacing: 0.1em;
+}
+
+/* 登录中状态:按钮文字切换 + 禁用 */
+.po-login-submit.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ───────── 错误提示 ───────── */
+.po-login-error {
+  margin-top: var(--po-space-4);
+  padding: var(--po-space-3) var(--po-space-4);
+  font-size: var(--po-text-control-size);
+  line-height: var(--po-text-control-line);
+  color: var(--po-error-fg);
+  background: var(--po-error-bg);
+  border: 1px solid var(--po-error-fg);
+  border-radius: var(--po-radius-panel);
+  text-align: center;
+}
+
+/* ───────── 演示账户提示 ───────── */
+.po-login-hint {
+  margin-top: var(--po-space-6);
+  padding: var(--po-space-3) var(--po-space-4);
+  background: var(--po-surface);
+  border: 1px dashed var(--po-border);
+  border-radius: var(--po-radius-panel);
+}
+.po-login-hint-title {
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+}
+.po-login-hint-row {
+  margin-top: var(--po-space-1);
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  color: var(--po-muted);
+}
+.po-login-hint-row code {
+  font-family: var(--po-font-mono);
+  color: var(--po-accent);
+  background: var(--po-accent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* ───────── 页脚(服务状态) ───────── */
+.po-login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 覆盖 layout.css 中 .po-health 的 margin-left:auto(登录页需要居中) */
+.po-login-footer .po-health {
+  margin-left: 0;
+}
+
+/* ───────── 入场动画 ───────── */
+@keyframes po-login-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 尊重系统减弱动效设置 */
+@media (prefers-reduced-motion: reduce) {
+  .po-login-card { animation: none; }
+}
+
+/* ───────── 小屏适配 ───────── */
+@media (max-width: 480px) {
+  .po-login-card {
+    max-width: 100%;
+    padding: var(--po-space-6) var(--po-space-4);
+  }
+  .po-login-brand-name {
+    font-size: var(--po-text-section-title-size);
+  }
+}

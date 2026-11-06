@@ -376,6 +376,42 @@
   font-weight: var(--po-weight-semibold);
 }
 
+/* ───────── 顶栏登录用户区(用户名 + 登出按钮) ───────── */
+.po-user-area {
+  display: flex;
+  align-items: center;
+  gap: var(--po-space-2);
+  white-space: nowrap;
+}
+.po-user-name {
+  font-size: var(--po-text-aux-size);
+  line-height: var(--po-text-aux-line);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+}
+.po-logout-btn {
+  padding: 4px 12px;
+  font-family: var(--po-font-sans);
+  font-size: var(--po-text-aux-size);
+  font-weight: var(--po-weight-medium);
+  color: var(--po-secondary);
+  background: transparent;
+  border: 1px solid var(--po-control-border);
+  border-radius: var(--po-radius-control);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.po-logout-btn:hover {
+  border-color: var(--po-error-fg);
+  color: var(--po-error-fg);
+  background: var(--po-error-bg);
+}
+.po-logout-btn:focus-visible {
+  outline: var(--po-focus-outline-width) solid var(--po-focus);
+  outline-offset: var(--po-focus-outline-offset);
+}
+
 /* ───────── 大屏演示导航(底部固定,5 步业务闭环) ───────── */
 .po-demo-nav {
   position: fixed;

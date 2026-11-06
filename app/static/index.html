@@ -16,6 +16,20 @@
 </head>
 <body class="po-app">
 
+  <!-- 登录态守卫:无令牌时立即跳转登录页(同步执行,避免工作台闪烁) -->
+  <script>
+    (function () {
+      try {
+        var token = localStorage.getItem('po_auth_token');
+        if (!token) {
+          window.location.replace('/login');
+        }
+      } catch (e) {
+        window.location.replace('/login');
+      }
+    })();
+  </script>
+
   <!-- ═══════════════ 顶栏(精简:侧栏开关/品牌/服务状态/演示模式) ═══════════════ -->
   <header class="po-topbar">
     <div class="po-topbar-inner">
@@ -30,6 +44,11 @@
       <div class="po-health">
         <span class="po-health-dot" id="po-health-dot"></span>
         <span id="po-health-text">检测中</span>
+      </div>
+      <!-- 登录用户区(登录后显示:用户名 + 登出按钮) -->
+      <div class="po-user-area" id="po-user-area" hidden>
+        <span class="po-user-name" id="po-user-name"></span>
+        <button class="po-logout-btn" id="po-logout-btn" type="button" title="退出登录">登出</button>
       </div>
       <button class="po-demo-toggle" id="po-demo-toggle" type="button" title="切换大屏演示模式(放大关键信息,底部显示演示流程导航)">演示模式</button>
     </div>
@@ -131,6 +150,7 @@
   <script src="/static/js/views/chat-view.js"></script>
   <script src="/static/js/views/backtest-view.js"></script>
   <script src="/static/js/router.js"></script>
+  <script src="/static/js/auth.js"></script>
   <script src="/static/js/bootstrap.js"></script>
 </body>
 </html>

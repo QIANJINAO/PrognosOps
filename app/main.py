@@ -19,6 +19,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.auth import auth_router
 from app.api.routes import router
 
 # 创建 FastAPI 应用实例
@@ -46,6 +47,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 注册 API 路由(含 /api/health 健康检查)
 app.include_router(router)
 
+# 注册认证路由(登录 / 登出 / 令牌校验)
+app.include_router(auth_router)
+
 
 # 根路径:直接返回前端首页(配合 <base href="/static/"> 确保相对路径正确解析)
 @app.get("/")
@@ -55,6 +59,16 @@ async def root():
 
     _index = os.path.join(os.path.dirname(__file__), "static", "index.html")
     return FileResponse(_index)
+
+
+# 登录页:返回 login.html
+@app.get("/login")
+async def login_page():
+    """登录页路径,返回 login.html。"""
+    from fastapi.responses import FileResponse
+
+    _login = os.path.join(os.path.dirname(__file__), "static", "login.html")
+    return FileResponse(_login)
 
 
 # 挂载静态资源目录(前端页面将在后续阶段放入)
