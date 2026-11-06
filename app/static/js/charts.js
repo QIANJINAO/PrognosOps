@@ -2,6 +2,9 @@
  * PrognosOps 图表渲染模块(Chart.js v4)
  * 职责:传感器趋势 / RUL 概率 / 成本曲线 / 失效概率与寿命 / 校准 / 敏感性
  * 所有数据字段严格对应后端响应模型,不虚构任何数值
+ * 深色主题清晰度规范:刻度/图例 ≥12px、轴标题 13px、曲线 2~2.5px、
+ * 提示框浅色文字 + 可辨边框;_baseOptions 对 plugins/scales 深合并,
+ * 子图覆盖 legend/scales 不再丢失公共 tooltip/刻度主题。
  */
 const Charts = (() => {
   'use strict';
@@ -20,20 +23,20 @@ const Charts = (() => {
     return canvas.getContext('2d');
   }
 
-  // 14 个传感器用色板(高区分度,避免蓝色系主导)
+  // 14 个传感器用色板(深色主题提亮至 400 级亮度,深海军蓝底上高对比可辨)
   const SENSOR_COLORS = [
-    '#059669', '#dc2626', '#d97706', '#7c3aed', '#db2777',
-    '#0891b2', '#65a30d', '#ea580c', '#4f46e5', '#be185d',
-    '#0d9488', '#ca8a04', '#9333ea', '#e11d48',
+    '#34D399', '#F87171', '#FBBF24', '#A78BFA', '#F472B6',
+    '#22D3EE', '#A3E635', '#FB923C', '#818CF8', '#E879F9',
+    '#2DD4BF', '#FACC15', '#C084FC', '#FB7185',
   ];
 
   // S14:传感器名→颜色固定映射(同名同色,筛选顺序不换色)
   const SENSOR_COLOR_MAP = {
-    s1: '#0891b2', s2: '#059669', s3: '#dc2626', s4: '#d97706', s5: '#7c3aed',
-    s6: '#db2777', s7: '#65a30d', s8: '#ea580c', s9: '#4f46e5', s10: '#be185d',
-    s11: '#0d9488', s12: '#ca8a04', s13: '#9333ea', s14: '#e11d48', s15: '#059669',
-    s16: '#dc2626', s17: '#d97706', s18: '#7c3aed', s19: '#db2777', s20: '#0891b2',
-    s21: '#65a30d',
+    s1: '#22D3EE', s2: '#34D399', s3: '#F87171', s4: '#FBBF24', s5: '#A78BFA',
+    s6: '#F472B6', s7: '#A3E635', s8: '#FB923C', s9: '#818CF8', s10: '#E879F9',
+    s11: '#2DD4BF', s12: '#FACC15', s13: '#C084FC', s14: '#FB7185', s15: '#34D399',
+    s16: '#F87171', s17: '#FBBF24', s18: '#A78BFA', s19: '#F472B6', s20: '#22D3EE',
+    s21: '#A3E635',
   };
   function sensorColor(name) {
     if (SENSOR_COLOR_MAP[name]) return SENSOR_COLOR_MAP[name];
@@ -43,39 +46,106 @@ const Charts = (() => {
     return SENSOR_COLORS[h % SENSOR_COLORS.length];
   }
 
-  // 策略用色(深色主题:冰蓝=基准/当前,绿=IEO-C,冷灰=ETO-Q,琥珀=IEO-Q)
+  // 策略用色(浅色主题:深蓝=基准/当前,深绿=IEO-C,中灰=ETO-Q,深琥珀=IEO-Q)
   const STRATEGY_COLORS = {
-    'ETO-C': '#59C7FF', 'IEO-C': '#52C7A5',
-    'ETO-Q': '#AABBD0', 'IEO-Q': '#F1B85B',
+    'ETO-C': '#2B8FD4', 'IEO-C': '#38A169',
+    'ETO-Q': '#718096', 'IEO-Q': '#C68A2E',
   };
 
-  // 深色主题图表文字/网格色(与 tokens.css 对齐)
+  // 浅色主题图表文字/网格色(与 tokens.css 白底对齐)
   const THEME = {
-    text: '#F3F7FC',      // 主文字:冷白
-    secondary: '#AABBD0', // 次级文字
-    muted: '#6B7F99',     // 弱化文字
-    grid: 'rgba(170, 187, 208, 0.08)', // 极淡网格线
+    text: '#1A2332',        // 主文字:深蓝黑
+    secondary: '#4A5568',   // 次级文字:图例/轴标题
+    muted: '#718096',       // 刻度文字:中灰
+    grid: 'rgba(113, 128, 150, 0.20)', // 网格线:可见但克制
+    tooltipBg: '#FFFFFF',   // 提示框底色:纯白
+    tooltipBorder: '#CBD5E0', // 提示框边框:浅灰
   };
 
-  // 通用默认选项(深色主题:轴/网格/图例统一浅色化)
-  const _baseOptions = (extra = {}) => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false, // S14:关闭曲线数值插值动效
-    plugins: {
-      legend: { labels: { font: { size: 11 }, boxWidth: 12, padding: 8, color: THEME.secondary } },
-      tooltip: {
-        bodyFont: { size: 11 }, titleFont: { size: 12 },
-        backgroundColor: '#16263A', titleColor: THEME.text, bodyColor: THEME.secondary,
-        borderColor: '#1E3048', borderWidth: 1,
+  // 字号规范:刻度/图例 ≥12px,轴标题 13px,提示框标题 13/正文 12
+  const FONT = {
+    tick: 12, legend: 12, axisTitle: 13, tooltipTitle: 13, tooltipBody: 12,
+  };
+
+  // ───────── 配置合并工具(修复浅展开覆盖公共主题的缺陷) ─────────
+
+  /** 深合并:嵌套对象逐键合并,避免子图整体覆盖公共 plugins/scales */
+  function _mergeDeep(base, extra) {
+    const out = Object.assign({}, base);
+    Object.keys(extra || {}).forEach(k => {
+      const bv = base[k], ev = extra[k];
+      if (ev && typeof ev === 'object' && !Array.isArray(ev)
+          && bv && typeof bv === 'object' && !Array.isArray(bv)) {
+        out[k] = _mergeDeep(bv, ev);
+      } else {
+        out[k] = ev;
+      }
+    });
+    return out;
+  }
+
+  /**
+   * scales 合并:仅合并子图显式给出的刻度 ID,
+   * 不把基础 y 强加给双 Y 轴图(yFail/yLife),避免出现空闲坐标轴。
+   */
+  function _mergeScales(baseScales, extraScales) {
+    if (!extraScales) return baseScales;
+    const out = {};
+    Object.keys(extraScales).forEach(id => {
+      out[id] = (baseScales[id] && typeof baseScales[id] === 'object')
+        ? _mergeDeep(baseScales[id], extraScales[id])
+        : extraScales[id];
+    });
+    return out;
+  }
+
+  // 窄屏判定:移动端减少刻度数量,避免 12px 刻度互相挤压
+  function _isNarrow() {
+    return (window.innerWidth || 1024) <= 640;
+  }
+  function _xTickLimit(desktop, mobile) {
+    return _isNarrow() ? mobile : desktop;
+  }
+
+  // 通用默认选项(深色主题:轴/网格/图例/提示框统一浅色化)
+  // plugins 与 scales 深合并:子图覆盖 legend.display 或自定义 scales 时,
+  // 公共 tooltip 主题与刻度字号/颜色不再丢失。
+  const _baseOptions = (extra = {}) => {
+    const base = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false, // S14:关闭曲线数值插值动效
+      plugins: {
+        legend: {
+          labels: { font: { size: FONT.legend }, boxWidth: 14, padding: 10, color: THEME.secondary },
+        },
+        tooltip: {
+          titleFont: { size: FONT.tooltipTitle },
+          bodyFont: { size: FONT.tooltipBody },
+          backgroundColor: THEME.tooltipBg,
+          titleColor: THEME.text,
+          bodyColor: THEME.secondary,
+          borderColor: THEME.tooltipBorder,
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 6,
+        },
       },
-    },
-    scales: {
-      x: { ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
-      y: { ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
-    },
-    ...extra,
-  });
+      scales: {
+        x: { ticks: { color: THEME.muted, font: { size: FONT.tick } }, grid: { color: THEME.grid } },
+        y: { ticks: { color: THEME.muted, font: { size: FONT.tick } }, grid: { color: THEME.grid } },
+      },
+    };
+    if (!extra || !Object.keys(extra).length) return base;
+    const out = Object.assign({}, base);
+    if (extra.plugins) out.plugins = _mergeDeep(base.plugins, extra.plugins);
+    if (extra.scales) out.scales = _mergeScales(base.scales, extra.scales);
+    // 其余顶级键(interaction 等)浅覆盖
+    Object.keys(extra).forEach(k => {
+      if (k !== 'plugins' && k !== 'scales') out[k] = extra[k];
+    });
+    return out;
+  };
 
   // ───────── 1. 传感器趋势图(S14:容器化独立小图) ─────────
 
@@ -136,16 +206,25 @@ const Charts = (() => {
             data: sensorData[s],
             borderColor: color,
             backgroundColor: color + '20',
-            borderWidth: 1.5,
+            borderWidth: 2,       // 提亮配色下加粗至 2px,小图更清晰
             pointRadius: 0,
+            pointHitRadius: 8,    // 无标记点时仍可悬停查值
             tension: 0.2,
           }],
         },
         options: _baseOptions({
           plugins: { legend: { display: false } },
           scales: {
-            x: { title: { display: true, text: '运行周期', font: { size: 10 }, color: THEME.muted }, ticks: { maxTicksLimit: 8, font: { size: 9 }, color: THEME.muted }, grid: { color: THEME.grid } },
-            y: { title: { display: true, text: '原始读数', font: { size: 10 }, color: THEME.muted }, ticks: { font: { size: 9 }, color: THEME.muted }, grid: { color: THEME.grid } },
+            x: {
+              title: { display: true, text: '运行周期', font: { size: FONT.axisTitle }, color: THEME.secondary },
+              ticks: { maxTicksLimit: _xTickLimit(8, 5), color: THEME.muted },
+              grid: { color: THEME.grid },
+            },
+            y: {
+              title: { display: true, text: '原始读数', font: { size: FONT.axisTitle }, color: THEME.secondary },
+              ticks: { maxTicksLimit: 5, color: THEME.muted },
+              grid: { color: THEME.grid },
+            },
           },
         }),
       });
@@ -170,17 +249,26 @@ const Charts = (() => {
         datasets: [{
           label: 'P(RUL = h)',
           data: probs,
-          backgroundColor: 'rgba(82, 199, 165, 0.7)',
-          borderColor: '#52C7A5',
-          borderWidth: 0.5,
+          backgroundColor: 'rgba(56, 161, 105, 0.70)',
+          borderColor: '#38A169',
+          borderWidth: 1,
           barPercentage: 1.0,
           categoryPercentage: 1.0,
         }],
       },
       options: _baseOptions({
         scales: {
-          x: { title: { display: true, text: '剩余使用寿命 h(周期)', font: { size: 11 }, color: THEME.secondary }, ticks: { maxTicksLimit: 16, color: THEME.muted }, grid: { color: THEME.grid } },
-          y: { title: { display: true, text: '概率 P(RUL = h)', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, beginAtZero: true, grid: { color: THEME.grid } },
+          x: {
+            title: { display: true, text: '剩余使用寿命 h(周期)', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { maxTicksLimit: _xTickLimit(16, 8), color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
+          y: {
+            title: { display: true, text: '概率 P(RUL = h)', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            beginAtZero: true,
+            grid: { color: THEME.grid },
+          },
         },
         plugins: { legend: { display: false } },
       }),
@@ -203,20 +291,22 @@ const Charts = (() => {
       {
         label: 'E[TC(z)] 期望总成本',
         data: totalCostCurve,
-        borderColor: '#59C7FF',
-        backgroundColor: 'rgba(89, 199, 255, 0.08)',
+        borderColor: '#2B8FD4',
+        backgroundColor: 'rgba(43, 143, 212, 0.12)',
         borderWidth: 2.5,
         pointRadius: 0,
+        pointHitRadius: 8,
         tension: 0.2,
         fill: true,
       },
       {
         label: 'E[C1(z)] 单次期望成本',
         data: costCurve,
-        borderColor: '#6B7F99',
-        borderWidth: 1.5,
+        borderColor: THEME.secondary, // 虚线在白底上可辨
+        borderWidth: 2,
         borderDash: [5, 3],
         pointRadius: 0,
+        pointHitRadius: 8,
         tension: 0.2,
       },
     ];
@@ -232,7 +322,7 @@ const Charts = (() => {
         borderColor: STRATEGY_COLORS[sName],
         backgroundColor: STRATEGY_COLORS[sName],
         pointRadius: 6,
-        pointHoverRadius: 8,
+        pointHoverRadius: 9,
         showLine: false,
       });
     });
@@ -242,8 +332,16 @@ const Charts = (() => {
       options: _baseOptions({
         interaction: { mode: 'index', intersect: false },
         scales: {
-          x: { title: { display: true, text: '维修窗口 z(周期)', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
-          y: { title: { display: true, text: '期望成本', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
+          x: {
+            title: { display: true, text: '维修窗口 z(周期)', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
+          y: {
+            title: { display: true, text: '期望成本', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
         },
       }),
     });
@@ -268,20 +366,22 @@ const Charts = (() => {
           {
             label: 'P(RUL < z) 失效概率',
             data: failureProbCurve,
-            borderColor: '#F07878',
-            backgroundColor: 'rgba(240, 120, 120, 0.10)',
-            borderWidth: 2,
+            borderColor: '#E53E3E',
+            backgroundColor: 'rgba(229, 62, 62, 0.12)',
+            borderWidth: 2.5,
             pointRadius: 0,
+            pointHitRadius: 8,
             tension: 0.2,
             yAxisID: 'yFail',
           },
           {
             label: 'E[L(z)] 期望寿命(周期)',
             data: expectedLifeCurve,
-            borderColor: '#52C7A5',
-            backgroundColor: 'rgba(82, 199, 165, 0.10)',
-            borderWidth: 2,
+            borderColor: '#38A169',
+            backgroundColor: 'rgba(56, 161, 105, 0.12)',
+            borderWidth: 2.5,
             pointRadius: 0,
+            pointHitRadius: 8,
             tension: 0.2,
             yAxisID: 'yLife',
           },
@@ -290,18 +390,22 @@ const Charts = (() => {
       options: _baseOptions({
         interaction: { mode: 'index', intersect: false },
         scales: {
-          x: { title: { display: true, text: '维修窗口 z(周期)', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
+          x: {
+            title: { display: true, text: '维修窗口 z(周期)', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
           yFail: {
             type: 'linear', position: 'left',
-            title: { display: true, text: '失效概率', font: { size: 11 }, color: '#F07878' },
-            ticks: { color: '#F07878' },
+            title: { display: true, text: '失效概率', font: { size: FONT.axisTitle }, color: '#E53E3E' },
+            ticks: { color: '#E53E3E' },
             beginAtZero: true,
             grid: { color: THEME.grid },
           },
           yLife: {
             type: 'linear', position: 'right',
-            title: { display: true, text: '期望寿命(周期)', font: { size: 11 }, color: '#52C7A5' },
-            ticks: { color: '#52C7A5' },
+            title: { display: true, text: '期望寿命(周期)', font: { size: FONT.axisTitle }, color: '#38A169' },
+            ticks: { color: '#38A169' },
             beginAtZero: true,
             grid: { drawOnChartArea: false },
           },
@@ -355,21 +459,32 @@ const Charts = (() => {
           {
             label: `${strategyName} 预测失效概率`,
             data: bins.map(b => b.mean_predicted),
-            backgroundColor: 'rgba(89, 199, 255, 0.7)',
-            borderWidth: 0,
+            backgroundColor: 'rgba(43, 143, 212, 0.70)',
+            borderWidth: 1,
+            borderColor: '#2B8FD4',
           },
           {
             label: '观测失效频率',
             data: bins.map(b => b.observed_freq),
-            backgroundColor: 'rgba(82, 199, 165, 0.7)',
-            borderWidth: 0,
+            backgroundColor: 'rgba(56, 161, 105, 0.70)',
+            borderWidth: 1,
+            borderColor: '#38A169',
           },
         ],
       },
       options: _baseOptions({
         scales: {
-          x: { title: { display: true, text: '预测概率分箱', font: { size: 11 }, color: THEME.secondary }, ticks: { maxTicksLimit: 10, font: { size: 9 }, color: THEME.muted }, grid: { color: THEME.grid } },
-          y: { title: { display: true, text: '概率 / 频率', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, beginAtZero: true, max: 1, grid: { color: THEME.grid } },
+          x: {
+            title: { display: true, text: '预测概率分箱', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { maxTicksLimit: _xTickLimit(10, 5), color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
+          y: {
+            title: { display: true, text: '概率 / 频率', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            beginAtZero: true, max: 1,
+            grid: { color: THEME.grid },
+          },
         },
       }),
     });
@@ -394,8 +509,10 @@ const Charts = (() => {
       data: sensitivity.map(p => p.regret_mean_by_strategy[sName]),
       borderColor: STRATEGY_COLORS[sName] || THEME.secondary,
       backgroundColor: (STRATEGY_COLORS[sName] || THEME.secondary) + '20',
-      borderWidth: 2,
+      borderWidth: 2.5,
       pointRadius: 3,
+      pointHoverRadius: 6,
+      pointHitRadius: 8,
       tension: 0.2,
     }));
     _instances[canvasId] = new Chart(ctx, {
@@ -404,8 +521,17 @@ const Charts = (() => {
       options: _baseOptions({
         interaction: { mode: 'index', intersect: false },
         scales: {
-          x: { title: { display: true, text: `参数 ${paramName} 取值`, font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, grid: { color: THEME.grid } },
-          y: { title: { display: true, text: 'regret 均值', font: { size: 11 }, color: THEME.secondary }, ticks: { color: THEME.muted }, beginAtZero: true, grid: { color: THEME.grid } },
+          x: {
+            title: { display: true, text: `参数 ${paramName} 取值`, font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            grid: { color: THEME.grid },
+          },
+          y: {
+            title: { display: true, text: 'regret 均值', font: { size: FONT.axisTitle }, color: THEME.secondary },
+            ticks: { color: THEME.muted },
+            beginAtZero: true,
+            grid: { color: THEME.grid },
+          },
         },
       }),
     });
@@ -423,8 +549,16 @@ const Charts = (() => {
     Object.keys(_instances).forEach(id => destroy(id));
   }
 
+  /** 强制重算尺寸:页面从隐藏切回可见后调用,确保 canvas 不停留在 0 尺寸 */
+  function resizeAll() {
+    Object.keys(_instances).forEach(id => {
+      try { _instances[id].resize(); } catch (_) { /* 实例已销毁则忽略 */ }
+    });
+  }
+
   return {
     sensorTrend, rulProbability, costCurve, failLifeCurve,
-    calibration, sensitivity, destroy, destroyAll,
+    calibration, sensitivity, destroy, destroyAll, resizeAll,
+    THEME, SENSOR_COLORS, SENSOR_COLOR_MAP, STRATEGY_COLORS,
   };
 })();

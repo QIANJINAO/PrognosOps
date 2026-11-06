@@ -385,7 +385,7 @@
   z-index: 50;
   background: var(--po-surface);
   border-top: 1px solid var(--po-control-border);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 .po-demo-nav-inner {
   max-width: 1440px;
@@ -463,7 +463,7 @@
     bottom: 0;
     z-index: 45;
     width: 260px;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
     transition: width 0.25s ease, padding 0.25s ease;
   }
   /* 折叠态:宽度归零收缩(不用 translateX(-100%),fixed+transform 会在视口左侧

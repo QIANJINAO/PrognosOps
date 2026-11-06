@@ -72,6 +72,8 @@ window.PO.bootstrap = (() => {
       btn.classList.toggle('is-active', btn.dataset.route === route);
     });
     mountViewForRoute(route);
+    // 目标页从隐藏切回可见后,强制图表重算尺寸(隐藏页 canvas 可能停留在 0 尺寸)
+    if (window.Charts && Charts.resizeAll) Charts.resizeAll();
     // 移动端:导航后收起侧栏覆盖层,露出主体内容
     if (window.innerWidth <= 640) collapseSidebar();
   }

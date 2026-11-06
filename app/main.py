@@ -47,16 +47,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(router)
 
 
-# 根路径重定向说明,方便首次访问的用户了解入口
+# 根路径:直接返回前端首页(配合 <base href="/static/"> 确保相对路径正确解析)
 @app.get("/")
 async def root():
-    """根路径,返回服务基本信息与 API 文档入口。"""
-    return {
-        "service": "PrognosOps",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "health": "/api/health",
-    }
+    """根路径,返回前端首页 index.html。"""
+    from fastapi.responses import FileResponse
+
+    _index = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    return FileResponse(_index)
 
 
 # 挂载静态资源目录(前端页面将在后续阶段放入)

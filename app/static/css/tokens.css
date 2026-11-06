@@ -31,35 +31,35 @@
   --po-weight-medium: 500;
   --po-weight-semibold: 600;
 
-  /* ───────── 主色(冰蓝指挥色) ───────── */
-  --po-primary: #59C7FF;
-  --po-primary-hover: #7AD4FF;
-  --po-accent: #59C7FF;
-  --po-accent-soft: rgba(89, 199, 255, 0.10);
-  --po-focus: #59C7FF;
-  /* 强调底上的文字色(冰蓝底配深海军蓝文字,高对比) */
-  --po-on-accent: #08111F;
+  /* ───────── 主色(蓝色指挥色) ───────── */
+  --po-primary: #2B8FD4;
+  --po-primary-hover: #4BA3E0;
+  --po-accent: #2B8FD4;
+  --po-accent-soft: rgba(43, 143, 212, 0.15);
+  --po-focus: #2B8FD4;
+  /* 强调底上的文字色(蓝底配白文字,高对比) */
+  --po-on-accent: #FFFFFF;
 
-  /* ───────── 面层(深海军蓝层级) ───────── */
-  --po-bg: #08111F;            /* 页面底色:深海军蓝 */
-  --po-surface: #101D2F;       /* 一级面板 */
-  --po-subtle: #16263A;        /* 二级区域/嵌套块 */
-  --po-text: #F3F7FC;          /* 主文字:冷白 */
-  --po-secondary: #AABBD0;     /* 次级文字 */
-  --po-muted: #6B7F99;         /* 弱化文字 */
-  --po-border: #1E3048;        /* 面板边框 */
-  --po-control-border: #2A4060;/* 控件边框 */
-  --po-input-bg: #0C1828;      /* 输入控件底色(比面板更深,凹陷感) */
+  /* ───────── 面层(浅色层级) ───────── */
+  --po-bg: #FFFFFF;            /* 页面底色:白色 */
+  --po-surface: #F5F7FA;       /* 一级面板:浅灰蓝 */
+  --po-subtle: #EDF0F5;        /* 二级区域/嵌套块 */
+  --po-text: #1A2332;          /* 主文字:深蓝黑 */
+  --po-secondary: #4A5568;     /* 次级文字:深灰 */
+  --po-muted: #718096;         /* 弱化文字:中灰 */
+  --po-border: #D1D5DB;        /* 面板边框:浅灰 */
+  --po-control-border: #CBD5E0;/* 控件边框 */
+  --po-input-bg: #FFFFFF;      /* 输入控件底色:纯白 */
 
   /* ───────── 语义色(前置为前景,后置为半透明背景) ───────── */
-  --po-success-fg: #52C7A5;
-  --po-success-bg: rgba(82, 199, 165, 0.12);
-  --po-warning-fg: #F1B85B;
-  --po-warning-bg: rgba(241, 184, 91, 0.12);
-  --po-error-fg: #F07878;
-  --po-error-bg: rgba(240, 120, 120, 0.12);
-  --po-info-fg: #59C7FF;
-  --po-info-bg: rgba(89, 199, 255, 0.10);
+  --po-success-fg: #38A169;
+  --po-success-bg: rgba(56, 161, 105, 0.10);
+  --po-warning-fg: #C68A2E;
+  --po-warning-bg: rgba(198, 138, 46, 0.10);
+  --po-error-fg: #E53E3E;
+  --po-error-bg: rgba(229, 62, 62, 0.10);
+  --po-info-fg: #2B8FD4;
+  --po-info-bg: rgba(43, 143, 212, 0.10);
 
   /* ───────── 间距 ───────── */
   --po-space-1: 4px;
@@ -76,8 +76,8 @@
   --po-radius-drawer: 12px;
 
   /* ───────── 阴影(深色主题:靠边框与底色差区分层级,阴影仅浮层用) ───────── */
-  --po-shadow-panel: none;
-  --po-shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --po-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --po-shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.15);
 
   /* ───────── 焦点 ───────── */
   --po-focus-outline-width: 2px;
@@ -108,15 +108,16 @@
 .po-app select, .po-app textarea { font: inherit; margin: 0; }
 .po-app img, .po-app svg, .po-app canvas { display: block; max-width: 100%; }
 
-/* ───────── 深色主题:输入控件底色加深,与面板区分 ───────── */
+/* ───────── 浅色主题:输入控件底色 ───────── */
 .po-app .po-input,
 .po-app .po-select,
 .po-app .po-textarea {
   background: var(--po-input-bg);
+  border-color: var(--po-control-border);
 }
 
-/* ───────── 深色主题:滚动条 ───────── */
+/* ───────── 浅色主题:滚动条 ───────── */
 .po-app ::-webkit-scrollbar { width: 8px; height: 8px; }
 .po-app ::-webkit-scrollbar-track { background: transparent; }
-.po-app ::-webkit-scrollbar-thumb { background: #2A4060; border-radius: 4px; }
-.po-app ::-webkit-scrollbar-thumb:hover { background: #3A5070; }
+.po-app ::-webkit-scrollbar-thumb { background: #A0AEC0; border-radius: 4px; }
+.po-app ::-webkit-scrollbar-thumb:hover { background: #718096; }

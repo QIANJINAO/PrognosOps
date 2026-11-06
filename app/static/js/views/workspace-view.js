@@ -227,7 +227,10 @@ window.PO.workspaceView = (() => {
     if (existing.join(',') === newVals.join(',')) return; // 选项未变不重建
     const current = sel.value;
     sel.innerHTML = newVals.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join('');
-    if (current && newVals.indexOf(current) !== -1) sel.value = current;
+    // 优先选中上下文中的设备(导入后自动选中首台),原选择仍有效则保留
+    const ctxUnit = s.context.unitId != null ? String(s.context.unitId) : '';
+    if (ctxUnit && newVals.indexOf(ctxUnit) !== -1) sel.value = ctxUnit;
+    else if (current && newVals.indexOf(current) !== -1) sel.value = current;
   }
 
   // 主按钮状态(文案/禁用/未应用字段提示)

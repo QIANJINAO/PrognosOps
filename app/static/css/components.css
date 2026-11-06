@@ -199,6 +199,12 @@
 }
 .po-empty p { max-width: 46ch; } /* 收窄行宽,避免断成三行 */
 
+/* 修复:display:flex 会覆盖 HTML hidden 属性的默认 display:none,
+   导致"尚未运行回测"空态与回测结果同时可见。局部规则恢复 hidden 行为,
+   不做全局 [hidden] 覆盖,避免影响其他组件的自定义隐藏逻辑。 */
+.po-empty[hidden] { display: none; }
+.po-status-bar[hidden] { display: none; }
+
 /* ───────── 滚动表格 ───────── */
 .po-table-scroll {
   overflow-x: auto;
@@ -447,7 +453,7 @@
   color: var(--po-accent);
   font-variant-numeric: tabular-nums;
   font-size: 1.15em;
-  text-shadow: 0 0 16px rgba(89, 199, 255, 0.35);
+  text-shadow: 0 0 16px rgba(89, 199, 255, 0.25);
 }
 .po-hero-now { font-size: 1em; }
 
@@ -547,7 +553,7 @@
 .po-strategy-baseline {
   border-color: var(--po-accent);
   background: var(--po-accent-soft);
-  box-shadow: 0 0 12px rgba(89, 199, 255, 0.08); /* 基准卡片冰蓝微光 */
+  box-shadow: 0 0 12px rgba(89, 199, 255, 0.12); /* 基准卡片冰蓝微光 */
 }
 .po-strategy-badges {
   display: flex;
@@ -799,15 +805,15 @@
 }
 .po-step-success .po-step-marker {
   background: var(--po-success-fg);
-  box-shadow: 0 0 6px rgba(82, 199, 165, 0.4);
+  box-shadow: 0 0 6px rgba(56, 161, 105, 0.35);
 }
 .po-step-error .po-step-marker {
   background: var(--po-error-fg);
-  box-shadow: 0 0 6px rgba(240, 120, 120, 0.4);
+  box-shadow: 0 0 6px rgba(229, 62, 62, 0.35);
 }
 .po-step-warning .po-step-marker {
   background: var(--po-warning-fg);
-  box-shadow: 0 0 6px rgba(241, 184, 91, 0.4);
+  box-shadow: 0 0 6px rgba(198, 138, 46, 0.35);
 }
 @keyframes po-pulse {
   0%, 100% { opacity: 1; }
@@ -1242,7 +1248,7 @@
   border-left: 1px solid var(--po-border);
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
 }
 
 .po-rh-header {
@@ -1828,7 +1834,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   justify-content: flex-end;
   animation: po-dd-fade-in 0.18s ease;

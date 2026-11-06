@@ -317,7 +317,9 @@ window.PO.backtestView = (() => {
       const r = await PO.backtest.runCurrent(readUiConfig());
       if (!r.ok) {
         // 阻止原因(无方案/敏感性不足两项/锁占用等)
-        if (statusEl) { statusEl.textContent = r.error || '无法运行回测'; statusEl.hidden = false; }
+        // 失败时保留上次成功结果:若有旧结果,标明来源避免误认作本次结果
+        const note = PO.getState().backtest ? '(上方仍为上次成功回测的结果,非本次)' : '';
+        if (statusEl) { statusEl.textContent = (r.error || '无法运行回测') + note; statusEl.hidden = false; }
         return;
       }
       if (r.stale) {
@@ -331,8 +333,10 @@ window.PO.backtestView = (() => {
       }
     } catch (err) {
       // API 错误(API.showApiError 归一化对象)
+      // 失败时保留上次成功结果:若有旧结果,标明来源避免误认作本次结果
       const msg = err && err.message ? err.message : '回测失败';
-      if (statusEl) { statusEl.textContent = '回测失败:' + msg; statusEl.hidden = false; }
+      const note = PO.getState().backtest ? '(上方仍为上次成功回测的结果,非本次)' : '';
+      if (statusEl) { statusEl.textContent = '回测失败:' + msg + note; statusEl.hidden = false; }
     } finally {
       if (btn) btn.disabled = !!PO.requests.isBusy('backtest');
     }

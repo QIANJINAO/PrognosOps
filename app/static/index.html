@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PrognosOps 维策 · 设备运维工作台</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <!-- S09:新页面只使用 tokens/components/layout,禁止新增 Tailwind 工具类 -->
-  <link rel="stylesheet" href="css/tokens.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
   <!-- S19:状态动效(淡入/spinner/应用高亮/reduced-motion) -->
-  <link rel="stylesheet" href="css/motion.css">
+  <link rel="stylesheet" href="/static/css/motion.css">
   <!-- S20:Chart.js 4.4.2 本地提供(取消未固定 CDN 引用,版本与许可证见 vendor/VENDOR-LICENSES.md) -->
-  <script src="vendor/chart.umd.min.js" defer></script>
+  <script src="/static/vendor/chart.umd.min.js" defer></script>
 </head>
 <body class="po-app">
 
@@ -109,28 +109,28 @@
 
   <!-- 脚本:状态层 + 控制器 + 路由 + 引导(不加载 app.js,不同时挂新旧 DOM;
        S14 起加载 charts.js:图表工具模块,新旧页共用,非旧页 DOM 逻辑) -->
-  <script src="js/state.js"></script>
-  <script src="js/request-controller.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/parameters.js"></script>
-  <script src="js/controllers/analysis.js"></script>
-  <script src="js/controllers/agent.js"></script>
-  <script src="js/controllers/backtest.js"></script>
-  <script src="js/demo-data.js"></script>
-  <script src="js/views/data-view.js"></script>
-  <script src="js/components/run-timeline.js"></script>
-  <script src="js/components/scenario-panel.js"></script>
-  <script src="js/components/result-table.js"></script>
-  <script src="js/components/evidence-panel.js"></script>
-  <script src="js/components/artifact-list.js"></script>
-  <script src="js/components/run-history.js"></script>
-  <script src="js/export.js"></script>
-  <script src="js/components/detail-drawer.js"></script>
-  <script src="js/views/cards.js"></script>
-  <script src="js/views/chat-view.js"></script>
-  <script src="js/views/backtest-view.js"></script>
-  <script src="js/router.js"></script>
-  <script src="js/bootstrap.js"></script>
+  <script src="/static/js/state.js"></script>
+  <script src="/static/js/request-controller.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/parameters.js"></script>
+  <script src="/static/js/controllers/analysis.js"></script>
+  <script src="/static/js/controllers/agent.js"></script>
+  <script src="/static/js/controllers/backtest.js"></script>
+  <script src="/static/js/demo-data.js"></script>
+  <script src="/static/js/views/data-view.js"></script>
+  <script src="/static/js/components/run-timeline.js"></script>
+  <script src="/static/js/components/scenario-panel.js"></script>
+  <script src="/static/js/components/result-table.js"></script>
+  <script src="/static/js/components/evidence-panel.js"></script>
+  <script src="/static/js/components/artifact-list.js"></script>
+  <script src="/static/js/components/run-history.js"></script>
+  <script src="/static/js/export.js"></script>
+  <script src="/static/js/components/detail-drawer.js"></script>
+  <script src="/static/js/views/cards.js"></script>
+  <script src="/static/js/views/chat-view.js"></script>
+  <script src="/static/js/views/backtest-view.js"></script>
+  <script src="/static/js/router.js"></script>
+  <script src="/static/js/bootstrap.js"></script>
 </body>
 </html>
