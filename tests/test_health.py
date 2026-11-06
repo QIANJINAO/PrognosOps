@@ -21,10 +21,10 @@ def test_health_check_returns_ok():
     assert data["service"] == "PrognosOps"
 
 
-def test_root_returns_service_info():
-    """测试根路径返回服务基本信息。"""
+def test_root_returns_workspace_html():
+    """测试根路径直接返回工作台页面。"""
     response = client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert data["service"] == "PrognosOps"
-    assert data["docs"] == "/docs"
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<title>PrognosOps 维策 · 设备运维工作台</title>" in response.text
+    assert '<span class="po-brand">PrognosOps</span>' in response.text

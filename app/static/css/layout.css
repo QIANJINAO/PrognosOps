@@ -491,6 +491,8 @@
   .po-health { flex: 0 0 auto; }
   .po-health #po-health-text { display: none; }
   .po-brand-sub { display: none; }
+  /* 手机顶栏优先保留导航、品牌、服务状态与登出入口，演示模式在桌面使用。 */
+  .po-demo-toggle { display: none; }
   /* 侧栏移动端:固定定位覆盖层 */
   .po-sidebar {
     position: fixed;
@@ -505,6 +507,14 @@
   /* 折叠态:宽度归零收缩(不用 translateX(-100%),fixed+transform 会在视口左侧
      产生溢出,Chrome 将其计入滚动区域导致整页横滚;width:0 不产生任何溢出) */
   .po-app-shell.po-sidebar-collapsed .po-sidebar {
+    width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+    box-shadow: none;
+  }
+  /* Bootstrap 执行前的窄屏首帧也保持折叠，防止侧栏先展开后收起产生 CLS。 */
+  html.po-narrow-start .po-sidebar {
     width: 0;
     padding: 0;
     border-right: none;

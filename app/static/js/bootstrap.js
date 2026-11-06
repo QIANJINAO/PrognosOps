@@ -111,6 +111,8 @@ window.PO.bootstrap = (() => {
 
     // 移动端默认折叠侧栏(覆盖式抽屉,避免遮挡主内容)
     if (window.innerWidth < 640) collapseSidebar();
+    // 正式折叠类已就位，移除仅用于首帧稳定的临时标记。
+    document.documentElement.classList.remove('po-narrow-start');
 
     // 视口跨越 640 断点时自动折叠侧栏(宽→窄,避免覆盖遮挡;窄→宽不自动展开,尊重用户选择)
     let lastNarrow = window.innerWidth < 640;

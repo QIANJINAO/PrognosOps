@@ -9,6 +9,7 @@ const path = require('path');
 
 const NEXT_URL = 'http://127.0.0.1:8765/static/index.html';
 const SHOT_DIR = 'D:\\codex download';
+const AUTH_STATE = path.join(__dirname, 'test-results', '.auth-state.json');
 
 /** 演示数据 → 分析 → 图表 → 回测 全流程,返回页面 */
 async function runFullFlow(page, prefix) {
@@ -55,13 +56,19 @@ test('生成演示全流程截图(桌面+手机)', async ({ browser }) => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
 
   // ═══ 桌面 1440×900 ═══
-  const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const desktop = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    storageState: AUTH_STATE,
+  });
   const dpage = await desktop.newPage();
   await runFullFlow(dpage, 'desktop-');
   await desktop.close();
 
   // ═══ 手机 390×844 ═══
-  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const mobile = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    storageState: AUTH_STATE,
+  });
   const mpage = await mobile.newPage();
   await runFullFlow(mpage, 'mobile-');
   await mobile.close();

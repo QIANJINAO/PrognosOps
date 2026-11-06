@@ -5,9 +5,11 @@
 //   T20-3 阻断外部 CDN:拦截非同源请求,页面/图表仍可用(S20 本地化验证)
 
 const { test, expect } = require('@playwright/test');
+const path = require('path');
 const apiFx = require('./fixtures/api-fixture');
 
 const PAGE = '/static/index.html';
+const AUTH_STATE = path.join(__dirname, 'test-results', '.auth-state.json');
 
 test.describe('S20:固定资源、防重复提交移交与首屏性能', () => {
 
@@ -49,6 +51,7 @@ test.describe('S20:固定资源、防重复提交移交与首屏性能', () => {
       // 每次新建 context:冷缓存(无磁盘/内存缓存复用)
       const context = await browser.newContext({
         viewport: { width: 390, height: 844 }, // 移动模拟
+        storageState: AUTH_STATE,
       });
       const page = await context.newPage();
       // 在页面脚本前注入性能观察者(捕获完整 LCP/CLS)

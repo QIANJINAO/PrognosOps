@@ -164,7 +164,7 @@ test.describe('S04:样式与表单基础', () => {
     });
     expect(focusStyle.outlineWidth).toBe('2px');
     expect(focusStyle.outlineOffset).toBe('2px');
-    expect(focusStyle.outlineColor).toContain('89, 199, 255'); // #59C7FF 冰蓝的 rgb 形式
+    expect(focusStyle.outlineColor).toContain('43, 143, 212'); // #2B8FD4 主蓝的 rgb 形式
   });
 
   test('T04-7:移动端输入 16px 防缩放,数字 28/36', async ({ page }) => {

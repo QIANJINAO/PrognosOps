@@ -54,6 +54,8 @@
 
     try {
       var resp = await fetch('/api/auth/verify?token=' + encodeURIComponent(token));
+      // 服务端异常不等同于令牌失效，交给 catch 使用本地缓存维持当前会话。
+      if (!resp.ok) throw new Error('认证服务暂时不可用');
       var data = await resp.json();
       if (data && data.valid) {
         // 令牌有效:展示用户信息(优先用后端返回,兜底本地缓存)

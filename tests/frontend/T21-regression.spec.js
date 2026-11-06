@@ -173,9 +173,9 @@ test('T21-4 图表主题提亮、字号≥12px、深合并不丢失公共配置'
 
   const checks = await page.evaluate(() => {
     const r = {};
-    // 1) THEME 提亮:muted 不再是过暗的 #6B7F99,secondary 提亮至 #C7D6EA
+    // 1) THEME 切换为白底高对比配色:文字使用深灰蓝，避免浅色背景下发虚
     r.mutedBright = Charts.THEME.muted !== '#6B7F99';
-    r.secondaryIsBright = Charts.THEME.secondary === '#C7D6EA';
+    r.secondaryMatchesLightTheme = Charts.THEME.secondary === '#4A5568';
     // 2) 旧深色传感器色已全部替换(#4f46e5/#7c3aed/#9333ea/#65a30d/#ca8a04)
     const oldDark = ['#4f46e5', '#7c3aed', '#9333ea', '#65a30d', '#ca8a04'];
     r.noOldDarkColors = Charts.SENSOR_COLORS.every(c => oldDark.indexOf(c.toLowerCase()) === -1);
@@ -214,9 +214,9 @@ test('T21-4 图表主题提亮、字号≥12px、深合并不丢失公共配置'
     return r;
   });
 
-  // 主题提亮
+  // 白底主题使用高对比深色文字
   expect(checks.mutedBright).toBe(true);
-  expect(checks.secondaryIsBright).toBe(true);
+  expect(checks.secondaryMatchesLightTheme).toBe(true);
   // 旧深色已替换
   expect(checks.noOldDarkColors).toBe(true);
   expect(checks.colorMapNoOldDark).toBe(true);
@@ -227,7 +227,8 @@ test('T21-4 图表主题提亮、字号≥12px、深合并不丢失公共配置'
   expect(checks.failXTickFont).toBeGreaterThanOrEqual(12);
   // 深合并:公共 tooltip 配置保留(浅展开会丢失)
   expect(checks.rulTooltipBg).toBeTruthy();
-  expect(checks.rulTooltipTitleColor).toBe('#F3F7FC');
+  expect(checks.rulTooltipBg).toBe('#FFFFFF');
+  expect(checks.rulTooltipTitleColor).toBe('#1A2332');
   expect(checks.failTooltipBg).toBeTruthy();
   // 双 Y 轴:有 yFail/yLife,无空闲基础 y
   expect(checks.hasIdleYAxis).toBe(false);

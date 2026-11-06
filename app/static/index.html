@@ -27,6 +27,10 @@
       } catch (e) {
         window.location.replace('/login');
       }
+      // 在侧栏元素解析前标记窄屏，避免首帧先展开、Bootstrap 初始化后再折叠造成布局偏移。
+      if (window.matchMedia && window.matchMedia('(max-width: 639px)').matches) {
+        document.documentElement.classList.add('po-narrow-start');
+      }
     })();
   </script>
 

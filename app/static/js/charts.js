@@ -107,7 +107,7 @@ const Charts = (() => {
     return _isNarrow() ? mobile : desktop;
   }
 
-  // 通用默认选项(深色主题:轴/网格/图例/提示框统一浅色化)
+  // 通用默认选项(浅色主题:轴/网格/图例/提示框统一高对比显示)
   // plugins 与 scales 深合并:子图覆盖 legend.display 或自定义 scales 时,
   // 公共 tooltip 主题与刻度字号/颜色不再丢失。
   const _baseOptions = (extra = {}) => {

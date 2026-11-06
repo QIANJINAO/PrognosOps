@@ -3,7 +3,11 @@
 const { defineConfig } = require('@playwright/test');
 const path = require('path');
 
+const authStatePath = path.join(__dirname, 'test-results', '.auth-state.json');
+
 module.exports = defineConfig({
+  // 启动测试前通过真实登录接口获取演示令牌，避免认证守卫把业务测试重定向到登录页。
+  globalSetup: require.resolve('./global-setup.js'),
   // 测试文件目录(当前 tests/frontend/)
   testDir: '.',
   // 测试文件匹配模式
@@ -34,6 +38,8 @@ module.exports = defineConfig({
     navigationTimeout: 15_000,
     // 忽略 HTTPS 证书错误(本地开发无需)
     ignoreHTTPSErrors: true,
+    // 全部业务测试复用由 globalSetup 生成的 localStorage 登录态。
+    storageState: authStatePath,
   },
 
   // 后端服务:uvicorn 启动 FastAPI 应用
